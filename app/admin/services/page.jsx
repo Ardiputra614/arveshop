@@ -110,8 +110,6 @@ export default function ServicePage() {
     icon_public_Id: null,
   });
 
-  console.log(filteredServices);
-
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const url = process.env.NEXT_PUBLIC_GOLANG_URL;

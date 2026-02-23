@@ -1,17 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import FormatRupiah from "../../../components/home/FormatRupiah";
 import axios from "axios";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 
-const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
+const GamesTopup = ({ payment, appUrl }) => {
   const url = process.env.NEXT_PUBLIC_GOLANG_URL;
   const params = useParams();
-  const slug = params.slug; // "aga"
-
-  console.log("Slug:", slug);
+  const slug = params.slug;
 
   // === COLOR PALETTE DARK THEME ===
   const COLORS = {
@@ -31,22 +29,28 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [service, setService] = useState(null);
+  const [paymentMethods, setPaymentMethods] = useState([]);
 
   // FETCH DATA DARI API
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        console.log("Fetching from:", `${url}/api/products/${slug}`);
 
-        const response = await axios.get(`${url}/api/products/${slug}`);
-        console.log("API Response:", response.data);
+        // Fetch products
+        const productsResponse = await axios.get(`${url}/api/products/${slug}`);
+        setProducts(productsResponse.data.data || []);
 
-        // Data dari API adalah array products
-        const productsData = response.data.data || [];
-        setProducts(productsData);
+        // Fetch service
+        const serviceResponse = await axios.get(`${url}/api/service/${slug}`);
+        setService(serviceResponse.data.data || null);
+
+        // Fetch payment methods
+        const paymentResponse = await axios.get(`${url}/api/payment-method`);
+        setPaymentMethods(paymentResponse.data.data);
       } catch (err) {
-        console.error("Error fetching products:", err);
+        console.error("Error fetching data:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -54,137 +58,11 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
     };
 
     if (slug) {
-      fetchProducts();
+      fetchData();
     }
   }, [slug, url]);
 
-  // === BUILD GAME OBJECT DARI DATA PRODUCT PERTAMA ===
-  const buildGameObject = () => {
-    if (!products || products.length === 0) {
-      // Return default game object jika tidak ada data
-      return {
-        id: 0,
-        name: slug || "Game",
-        logo: "",
-        category: "game",
-        description: `Top up ${slug || "game"}`,
-        customer_no_format: "satu_input",
-        field1_label: "ID Game",
-        field1_placeholder: "Masukkan ID Game",
-        field2_label: "",
-        field2_placeholder: "",
-        separator: "",
-        how_to_topup: `
-          <ol class="list-decimal pl-5 space-y-2">
-            <li>Masukkan ID Game</li>
-            <li>Pilih nominal yang diinginkan</li>
-            <li>Pilih metode pembayaran</li>
-            <li>Isi nomor WhatsApp untuk notifikasi</li>
-            <li>Bayar dan tunggu proses</li>
-          </ol>
-        `,
-      };
-    }
-
-    // Gunakan product pertama sebagai referensi game
-    const firstProduct = products[0];
-
-    // Tentukan format input berdasarkan category atau product_type
-    let customerNoFormat = "satu_input";
-    let field1Label = "ID Game";
-    let field1Placeholder = "Masukkan ID Game";
-    let field2Label = "";
-    let field2Placeholder = "";
-
-    // Cek apakah ini produk PLN
-    const isPln =
-      firstProduct.product_name?.toLowerCase().includes("pln") ||
-      firstProduct.category === "pln" ||
-      slug?.toLowerCase() === "pln";
-
-    if (isPln) {
-      customerNoFormat = "satu_input";
-      field1Label = "Nomor Meteran PLN";
-      field1Placeholder = "Contoh: 12345678901";
-    } else if (
-      firstProduct.category === "pulsa" ||
-      firstProduct.product_type === "pulsa"
-    ) {
-      customerNoFormat = "satu_input";
-      field1Label = "Nomor HP";
-      field1Placeholder = "Contoh: 081234567890";
-    } else if (
-      firstProduct.category === "data" ||
-      firstProduct.product_type === "data"
-    ) {
-      customerNoFormat = "satu_input";
-      field1Label = "Nomor HP";
-      field1Placeholder = "Contoh: 081234567890";
-    }
-
-    return {
-      id: firstProduct.id,
-      name: firstProduct.product_name || slug || "Game",
-      logo: "", // API tidak punya logo, bisa pakai default
-      category: firstProduct.category || "game",
-      description:
-        firstProduct.desc || `Top up ${firstProduct.product_name || "game"}`,
-      customer_no_format: customerNoFormat,
-      field1_label: field1Label,
-      field1_placeholder: field1Placeholder,
-      field2_label: field2Label,
-      field2_placeholder: field2Placeholder,
-      separator: "",
-      how_to_topup: `
-        <ol class="list-decimal pl-5 space-y-2">
-          <li>Masukkan ${field1Label}</li>
-          <li>Pilih nominal yang diinginkan</li>
-          <li>Pilih metode pembayaran</li>
-          <li>Isi nomor WhatsApp untuk notifikasi</li>
-          <li>Bayar dan tunggu proses</li>
-        </ol>
-      `,
-    };
-  };
-
-  // Build game object dari data products
-  const finalGame = buildGameObject();
-
-  // Cek apakah ini produk PLN
-  const isPlnProduct =
-    finalGame.name?.toLowerCase().includes("pln") ||
-    slug?.toLowerCase() === "pln";
-
-  // === DATA DUMMY UNTUK PAYMENT (sementara) ===
-  const dummyPayment = [
-    {
-      id: 1,
-      name: "QRIS",
-      logo: "payment/qris.png",
-      percentase_fee: 1,
-      nominal_fee: 0,
-      payment_type: "qris",
-    },
-    {
-      id: 2,
-      name: "BANK BCA",
-      logo: "payment/bca.png",
-      percentase_fee: 0,
-      nominal_fee: 1500,
-      payment_type: "bank_transfer",
-    },
-    {
-      id: 3,
-      name: "DANA",
-      logo: "payment/dana.png",
-      percentase_fee: 0.5,
-      nominal_fee: 0,
-      payment_type: "ewallet",
-    },
-  ];
-
-  const finalPayment = payment || dummyPayment;
-  const finalAppUrl = appUrl || "http://localhost:3000";
+  console.log(products);
 
   // State untuk data akun
   const [accountData, setAccountData] = useState({});
@@ -192,52 +70,43 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [isFormComplete, setIsFormComplete] = useState(false);
   const [waPembeli, setWaPembeli] = useState("");
-  const [activeStep, setActiveStep] = useState(1);
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [isCheckingPln, setIsCheckingPln] = useState(false);
-  const [plnData, setPlnData] = useState(null);
-  const [plnError, setPlnError] = useState(null);
-  const [isOpen, setIsOpen] = useState(false);
 
-  // Format customer number
+  // Cek apakah ini produk PLN berdasarkan category
+  const isPlnProduct =
+    service?.category?.name?.toLowerCase() === "pln" ||
+    service?.slug?.toLowerCase().includes("pln");
+
+  // Format customer number berdasarkan format dari service
   const formatCustomerNo = () => {
-    if (!finalGame) return "";
+    if (!service) return "";
 
-    if (finalGame.customer_no_format === "satu_input") {
+    if (service.customer_no_format === "satu_input") {
       return accountData.field1 || "";
     }
 
-    if (finalGame.customer_no_format === "dua_input") {
+    if (service.customer_no_format === "dua_input") {
       const field1 = accountData.field1 || "";
       const field2 = accountData.field2 || "";
-      const separator = finalGame.separator || "";
 
-      if (field1 && !field2) return field1;
-      if (!field1 && field2) return field2;
       if (field1 && field2) {
-        return `${field1}${separator}${field2}`;
+        return `${field1}|${field2}`;
       }
-      return "";
+      return field1 || field2 || "";
     }
 
     return "";
   };
 
-  // Cek apakah akun sudah lengkap
+  // Cek apakah akun sudah lengkap berdasarkan format
   const isAccountComplete = () => {
-    if (!finalGame) return false;
+    if (!service) return false;
 
-    if (finalGame.customer_no_format === "satu_input") {
-      return accountData.field1 && accountData.field1.trim() !== "";
+    if (service.customer_no_format === "satu_input") {
+      return !!(accountData.field1 && accountData.field1.trim() !== "");
     }
 
-    if (finalGame.customer_no_format === "dua_input") {
-      return (
-        accountData.field1 &&
-        accountData.field1.trim() !== "" &&
-        accountData.field2 &&
-        accountData.field2.trim() !== ""
-      );
+    if (service.customer_no_format === "dua_input") {
+      return !!(accountData.field1?.trim() && accountData.field2?.trim());
     }
 
     return false;
@@ -252,8 +121,10 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
     }));
   };
 
-  // Render input fields
+  // Render input fields berdasarkan format dari service
   const renderAccountInputs = () => {
+    if (!service) return null;
+
     return (
       <div className="space-y-4">
         {/* Preview jika sudah ada data */}
@@ -294,20 +165,20 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
           </div>
         )}
 
-        {/* Field 1 */}
+        {/* Field 1 - selalu ada */}
         <div className="space-y-2">
           <label
             className="block text-sm font-medium text-gray-200"
             htmlFor="field1"
           >
-            {finalGame.field1_label || "Field 1"} *
+            {service.field1_label || "Field 1"} *
           </label>
           <div className="relative">
             <input
               type="text"
               id="field1"
               className="w-full px-4 py-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 transition bg-gray-800 text-gray-100 border-gray-700 focus:border-blue-500 focus:ring-blue-500/30"
-              placeholder={finalGame.field1_placeholder || `Masukkan data`}
+              placeholder={service.field1_placeholder || "Masukkan data"}
               value={accountData.field1 || ""}
               onChange={(e) => handleAccountChange("field1", e.target.value)}
             />
@@ -327,58 +198,57 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
               </svg>
             </div>
           </div>
+          {service.example_format && (
+            <p className="text-xs text-gray-400 mt-1">
+              Contoh: {service.example_format}
+            </p>
+          )}
         </div>
 
-        {/* Field 2 jika ada */}
-        {finalGame.customer_no_format === "dua_input" &&
-          finalGame.field2_label && (
-            <div className="space-y-2">
-              <label
-                className="block text-sm font-medium text-gray-200"
-                htmlFor="field2"
-              >
-                {finalGame.field2_label} *
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="field2"
-                  className="w-full px-4 py-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 transition bg-gray-800 text-gray-100 border-gray-700 focus:border-blue-500 focus:ring-blue-500/30"
-                  placeholder={finalGame.field2_placeholder || `Masukkan data`}
-                  value={accountData.field2 || ""}
-                  onChange={(e) =>
-                    handleAccountChange("field2", e.target.value)
-                  }
-                />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                  <svg
-                    className="w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </div>
+        {/* Field 2 - hanya jika format dua_input */}
+        {service.customer_no_format === "dua_input" && service.field2_label && (
+          <div className="space-y-2">
+            <label
+              className="block text-sm font-medium text-gray-200"
+              htmlFor="field2"
+            >
+              {service.field2_label} *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                id="field2"
+                className="w-full px-4 py-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 transition bg-gray-800 text-gray-100 border-gray-700 focus:border-blue-500 focus:ring-blue-500/30"
+                placeholder={service.field2_placeholder || "Masukkan data"}
+                value={accountData.field2 || ""}
+                onChange={(e) => handleAccountChange("field2", e.target.value)}
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                <svg
+                  className="w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
               </div>
             </div>
-          )}
+          </div>
+        )}
       </div>
     );
   };
 
   // Cek form complete
   useEffect(() => {
-    let isValid = false;
-
-    isValid =
+    const isValid =
       isAccountComplete() && selectedProduct && paymentMethod && waPembeli;
-
     setIsFormComplete(isValid);
   }, [accountData, selectedProduct, paymentMethod, waPembeli]);
 
@@ -388,8 +258,7 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
 
     // Cek apakah produk aktif
     const isActive =
-      product.buyer_product_status === true &&
-      product.seller_product_status === true;
+      product.buyer_product_status && product.seller_product_status;
 
     if (!isActive) {
       return (
@@ -546,16 +415,19 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
       product_type: selectedProduct.product_type,
       gross_amount: calculateTotalPayment(),
       fee: calculateTotalFee(),
-      paymentMethod: paymentMethod.name,
+      payment_method_id: paymentMethod.id,
+      payment_method_name: paymentMethod.name,
+      payment_type: paymentMethod.type,
       customer_no: customerNo,
-      payment_type: paymentMethod.payment_type,
       wa_pembeli: waPembeli,
+      customer_no_format: service?.customer_no_format,
     };
 
     console.log("Data yang dikirim:", data);
+    // TODO: Kirim ke API transaksi
   };
 
-  if (loading && products.length === 0) {
+  if (loading && products.length === 0 && !service) {
     return (
       <div className="min-h-screen bg-[#37353E] flex items-center justify-center">
         <div className="text-white">Loading...</div>
@@ -563,10 +435,18 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
     );
   }
 
+  if (!service) {
+    return (
+      <div className="min-h-screen bg-[#37353E] flex items-center justify-center">
+        <div className="text-white">Service tidak ditemukan</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#37353E]">
       <div className="container mx-auto px-4 max-w-7xl py-6">
-        {/* Header dengan Game Info */}
+        {/* Header dengan Service Info */}
         <div
           className="rounded-2xl shadow-xl overflow-hidden mb-6 transform transition duration-300 hover:shadow-2xl"
           style={{ backgroundColor: COLORS.primary }}
@@ -580,9 +460,11 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
             <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
               <div className="relative">
                 <Image
-                  src={`${finalGame.logo}`}
-                  alt={`${finalGame.name} Logo`}
+                  src={service.logo || "/default-game-logo.png"}
+                  alt={`${service.name} Logo`}
                   className="w-24 h-24 md:w-28 md:h-28 rounded-xl shadow-2xl object-cover border-4 border-white/20 transform rotate-3 hover:rotate-0 transition-transform duration-300"
+                  width={112}
+                  height={112}
                 />
                 <div
                   className="absolute -bottom-2 -right-2 text-white text-xs font-bold px-3 py-1 rounded-full"
@@ -595,19 +477,17 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
               </div>
               <div className="text-center md:text-left">
                 <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  {finalGame.name}
+                  {service.name}
                 </h1>
                 <p className="text-gray-300 text-lg">
-                  {isPlnProduct
-                    ? "Bayar tagihan listrik dengan mudah"
-                    : finalGame.description ||
-                      "Top up dengan cepat, aman, dan terpercaya"}
+                  {service.description ||
+                    (isPlnProduct
+                      ? "Bayar tagihan listrik dengan mudah"
+                      : "Top up dengan cepat, aman, dan terpercaya")}
                 </p>
-                {/* Real-time indicator (dikomentari sementara) */}
-                {/* <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-300 border border-blue-700/30">
-                                        <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
-                                        Real-time Product Updates
-                                    </div> */}
+                {service.notes && (
+                  <p className="text-sm text-gray-400 mt-2">{service.notes}</p>
+                )}
               </div>
             </div>
           </div>
@@ -688,7 +568,7 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
                   </div>
 
                   <div className="grid sm:grid-cols-1 lg:grid-cols-3 gap-4">
-                    {finalPayment.map((method) => (
+                    {paymentMethods.map((method) => (
                       <div
                         key={method.id}
                         className={`border-2 rounded-xl p-4 flex items-center cursor-pointer transition-all duration-300 hover:shadow-lg hover:transform hover:-translate-y-1 ${
@@ -708,8 +588,19 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
                               : COLORS.accent,
                         }}
                       >
+                        {method.logo && (
+                          <div className="mr-3">
+                            <Image
+                              src={method.logo}
+                              alt={method.name}
+                              width={32}
+                              height={32}
+                              className="object-contain"
+                            />
+                          </div>
+                        )}
                         <div className="flex-grow">
-                          <div className="font-semibold text-gray-100 uppercase">
+                          <div className="font-semibold text-gray-100">
                             {method.name}
                           </div>
                         </div>
@@ -762,7 +653,7 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-200">
-                        Nomor WhatsApp
+                        Nomor WhatsApp (untuk notifikasi)
                       </label>
                       <div className="relative">
                         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center">
@@ -776,6 +667,10 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
                           onChange={(e) => setWaPembeli(e.target.value)}
                         />
                       </div>
+                      <p className="text-xs text-gray-400">
+                        Nomor akan digunakan untuk mengirim notifikasi status
+                        transaksi
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -808,6 +703,9 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
                           <h4 className="font-bold text-gray-100">
                             {selectedProduct.product_name}
                           </h4>
+                          <p className="text-xs text-gray-400">
+                            {selectedProduct.brand} - {selectedProduct.type}
+                          </p>
                         </div>
 
                         <div className="p-4 space-y-3">
@@ -909,6 +807,22 @@ const GamesTopup = ({ payment, appUrl, game, formatConfig, exampleFormat }) => {
             </div>
           </div>
         </form>
+
+        {/* How to Top Up */}
+        {service.how_to_topup && (
+          <div
+            className="rounded-2xl shadow-lg mt-6 p-6"
+            style={{ backgroundColor: COLORS.primary }}
+          >
+            <h3 className="text-xl font-bold text-gray-100 mb-4">
+              Cara Top Up
+            </h3>
+            <div
+              className="text-gray-300 prose prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: service.how_to_topup }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

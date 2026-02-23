@@ -304,7 +304,7 @@ export default function PaymentMethodPage() {
     setIsModalOpen(true);
   };
 
-  // Open Edit Modal - PERBAIKAN DI SINI
+  // Open Edit Modal
   const openEditModal = (method) => {
     console.log("Opening edit modal for:", method);
     setModalType("edit");
@@ -316,6 +316,7 @@ export default function PaymentMethodPage() {
       percentase_fee: method.percentase_fee || "",
       nominal_fee: method.nominal_fee || "",
       type: method.type || "",
+      fee_type: method.fee_type || "", // TAMBAHKAN INI!
       is_active: method.is_active || false,
       logo: method.logo || null,
       logo_public_id: method.logo_public_id || null,
@@ -323,14 +324,7 @@ export default function PaymentMethodPage() {
 
     setFormErrors({});
     setLogoFile(null);
-
-    // Set logo preview if exists
-    if (method.logo) {
-      setLogoPreview(method.logo);
-    } else {
-      setLogoPreview(null);
-    }
-
+    setLogoPreview(method.logo || null); // Set preview jika ada logo
     setRemoveLogo(false);
     setIsModalOpen(true);
   };
@@ -369,20 +363,21 @@ export default function PaymentMethodPage() {
     const file = e.target.files[0];
 
     if (file) {
-      // Validate file type
+      // Validasi file
       const validTypes = [
         "image/jpeg",
         "image/jpg",
         "image/png",
         "image/gif",
         "image/svg+xml",
+        "image/webp",
       ];
+
       if (!validTypes.includes(file.type)) {
-        toast.error("Format file harus JPG, PNG, GIF, atau SVG");
+        toast.error("Format file harus JPG, PNG, GIF, WEBP, atau SVG");
         return;
       }
 
-      // Validate file size (2MB max)
       if (file.size > 2 * 1024 * 1024) {
         toast.error("Ukuran file maksimal 2MB");
         return;
@@ -390,14 +385,23 @@ export default function PaymentMethodPage() {
 
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
-      setRemoveLogo(false);
+      setRemoveLogo(false); // JANGAN set true! Ini untuk upload baru
+
+      // Reset file input value to allow selecting same file again
+      e.target.value = "";
     }
   };
 
   const handleRemoveLogo = () => {
     setLogoFile(null);
     setLogoPreview(null);
-    setRemoveLogo(true);
+    setRemoveLogo(true); // Ini untuk menghapus logo
+
+    // Reset file input
+    const fileInput = document.getElementById("logo");
+    if (fileInput) {
+      fileInput.value = "";
+    }
   };
 
   // Get type icon and color
@@ -420,29 +424,31 @@ export default function PaymentMethodPage() {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.name.trim()) {
+    if (!formData.name?.trim()) {
       errors.name = "Nama payment method wajib diisi";
     }
 
-    // if (formData.fee_type === "percentase_fee" || !formData.percentase_fee) {
-    //   if (!formData.percentase_fee) {
-    //     errors.percentase_fee = "Percentase fee wajib diisi";
-    //   }
-    // } else {
-    //   if (!formData.nominal_fee) {
-    //     errors.percentase_fee = "Percentase fee wajib diisi";
-    //   }
-    // }
-
     if (!formData.fee_type) {
-      errors.type = "Tipe admin wajib dipilih";
+      errors.fee_type = "Tipe biaya admin wajib dipilih";
+    }
+
+    // Validasi berdasarkan fee_type
+    if (formData.fee_type === "percentase_fee") {
+      if (!formData.percentase_fee && formData.percentase_fee !== 0) {
+        errors.percentase_fee = "Percentase fee wajib diisi";
+      }
+    } else if (formData.fee_type === "nominal_fee") {
+      if (!formData.nominal_fee && formData.nominal_fee !== 0) {
+        errors.nominal_fee = "Nominal fee wajib diisi";
+      }
     }
 
     if (!formData.type) {
       errors.type = "Tipe payment method wajib dipilih";
     }
 
-    if (!formData.is_active) {
+    // is_active selalu punya nilai (default true)
+    if (formData.is_active === undefined) {
       errors.is_active = "Status wajib dipilih";
     }
 
@@ -463,33 +469,76 @@ export default function PaymentMethodPage() {
     setSubmitting(true);
 
     try {
+      const formDataToSend = new FormData();
+
+      // Append semua field
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("fee_type", formData.fee_type);
+      formDataToSend.append("type", formData.type);
+      formDataToSend.append("is_active", formData.is_active);
+
+      if (formData.nominal_fee) {
+        formDataToSend.append("nominal_fee", formData.nominal_fee);
+      }
+
+      if (formData.percentase_fee) {
+        formDataToSend.append("percentase_fee", formData.percentase_fee);
+      }
+
+      // LOGIKA YANG BENAR:
+      // 1. Jika ada file baru, upload (remove_logo = false)
+      if (logoFile) {
+        formDataToSend.append("logo", logoFile);
+        // Jangan append remove_logo!
+      }
+      // 2. Jika user ingin menghapus logo (tanpa upload baru)
+      else if (removeLogo && modalType === "edit") {
+        formDataToSend.append("remove_logo", "true");
+      }
+
+      // Untuk update, handle remove logo
+      if (modalType === "edit" && removeLogo) {
+        formDataToSend.append("remove_logo", "true");
+      }
+
+      // Log untuk debugging
+      console.log("FormData entries:");
+      for (let pair of formDataToSend.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+      console.log("removelogo:", removeLogo);
+
+      // CREATE PAYMENT METHOD
       if (modalType === "add") {
-        // Create new payment method
         const response = await axios.post(
           `${url}/api/admin/payment-method`,
-          formData,
+          formDataToSend, // Gunakan formDataToSend, bukan formData state
           {
-            header: "multipart/form-data",
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
           },
         );
 
-        // const newMethod = {
-        //   id: paymentMethods.length + 1,
-        //   ...formData,
-        //   logo: logoPreview ? "payment-method-logo.png" : null,
-        //   created_at: new Date().toISOString(),
-        // };
-
-        setPaymentMethods((prev) => [...prev, response.data.data]);
+        const newMethod = response.data.data;
+        setPaymentMethods((prev) => [...prev, newMethod]);
         toast.success(`Payment method "${formData.name}" berhasil ditambahkan`);
-      } else {
-        // Update existing payment method
-        const updatedMethod = {
-          ...selectedMethod,
-          ...formData,
-          logo: removeLogo ? null : logoPreview || selectedMethod.logo,
-        };
+      }
 
+      // UPDATE PAYMENT METHOD
+      else {
+        console.log("data send", formDataToSend);
+        const response = await axios.put(
+          `${url}/api/admin/payment-method/${selectedMethod.id}`,
+          formDataToSend, // Gunakan formDataToSend, bukan formData state
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          },
+        );
+
+        const updatedMethod = response.data.data;
         setPaymentMethods((prev) =>
           prev.map((method) =>
             method.id === selectedMethod.id ? updatedMethod : method,
@@ -501,11 +550,25 @@ export default function PaymentMethodPage() {
       closeModal();
     } catch (error) {
       console.error("Error saving payment method:", error);
-      toast.error("Terjadi kesalahan sistem");
+      toast.error(error.response?.data?.message || "Terjadi kesalahan sistem");
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Reset states ketika modal dibuka
+  useEffect(() => {
+    if (isModalOpen) {
+      if (modalType === "edit" && selectedMethod) {
+        setLogoPreview(selectedMethod.logo || null);
+        setRemoveLogo(false);
+      } else {
+        setLogoPreview(null);
+        setRemoveLogo(false);
+      }
+      setLogoFile(null);
+    }
+  }, [isModalOpen, modalType, selectedMethod]);
 
   // Handle delete
   const handleDelete = async (method) => {
@@ -516,6 +579,8 @@ export default function PaymentMethodPage() {
     }
 
     try {
+      await axios.delete(`${url}/api/admin/payment-method/${method.id}`);
+
       setPaymentMethods((prev) => prev.filter((m) => m.id !== method.id));
       toast.success(`Payment method "${method.name}" berhasil dihapus`);
     } catch (error) {
@@ -926,6 +991,27 @@ export default function PaymentMethodPage() {
                                     <XIcon className="w-3 h-3" />
                                   </button>
                                 </div>
+                              ) : selectedMethod?.logo &&
+                                !removeLogo &&
+                                modalType === "edit" ? (
+                                <div className="relative">
+                                  <div className="h-24 w-24 rounded-xl border-2 border-gray-200 overflow-hidden bg-gray-100">
+                                    <Image
+                                      src={selectedMethod.logo}
+                                      alt="Current logo"
+                                      width={96}
+                                      height={96}
+                                      className="object-cover w-full h-full"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={handleRemoveLogo}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                  >
+                                    <XIcon className="w-3 h-3" />
+                                  </button>
+                                </div>
                               ) : (
                                 <div className="h-24 w-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
                                   <UploadIcon className="w-8 h-8 text-gray-400" />
@@ -933,12 +1019,25 @@ export default function PaymentMethodPage() {
                               )}
                             </div>
                             <div className="flex-1">
-                              <label className="block">
-                                <div className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
+                              {/* Input file terpisah dari label */}
+                              <input
+                                type="file"
+                                id="logo"
+                                name="logo"
+                                onChange={handleLogoChange}
+                                accept="image/jpeg,image/jpg,image/png,image/gif,image/svg+xml,image/webp"
+                                className="hidden"
+                              />
+                              <label
+                                htmlFor="logo"
+                                className="block w-full cursor-pointer"
+                              >
+                                <div className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors">
                                   <div className="flex flex-col items-center justify-center space-y-2">
                                     <UploadIcon className="w-6 h-6 text-gray-400" />
                                     <span className="text-sm text-gray-600">
-                                      {logoPreview
+                                      {logoPreview ||
+                                      (selectedMethod?.logo && !removeLogo)
                                         ? "Ganti Logo"
                                         : "Upload Logo"}
                                     </span>
@@ -946,16 +1045,18 @@ export default function PaymentMethodPage() {
                                       Klik untuk memilih file
                                     </span>
                                   </div>
-                                  <input
-                                    type="file"
-                                    id="logo"
-                                    name="logo"
-                                    onChange={handleLogoChange}
-                                    accept="image/*"
-                                    className="hidden"
-                                  />
                                 </div>
                               </label>
+
+                              {/* Tampilkan info file jika ada */}
+                              {logoFile && (
+                                <div className="mt-2 flex items-center text-sm text-green-600">
+                                  <CheckCircleIcon className="w-4 h-4 mr-1" />
+                                  <span className="truncate">
+                                    {logoFile.name}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
