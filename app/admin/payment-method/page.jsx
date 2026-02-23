@@ -793,6 +793,7 @@ export default function PaymentMethodPage() {
                     {filteredMethods.map((method, index) => {
                       // const typeInfo = getTypeInfo(method.type);
                       // const TypeIcon = typeInfo.icon;
+                      console.log("type", method);
 
                       return (
                         <tr
@@ -831,9 +832,9 @@ export default function PaymentMethodPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full`}
+                              className={`px-2 inline-flex text-sm text-gray-900 leading-5 font-semibold rounded-full`}
                             >
-                              -
+                              {method.type.toUpperCase()}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
