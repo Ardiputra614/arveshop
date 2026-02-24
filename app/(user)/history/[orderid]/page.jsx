@@ -14,33 +14,54 @@ import {
 } from "lucide-react";
 import Head from "next/head";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
-// import axios from "axios";
+import axios from "axios";
 
-export default function History({ data, error, orderId }) {
+export default function History() {
+  const url = process.env.NEXT_PUBLIC_GOLANG_URL;
+  const params = useParams();
+  const order_id = params.orderid;
+
   // === DATA DUMMY UNTUK TESTING ===
-  const dummyData = {
-    order_id: "ORDER-123456",
-    transaction_status: "pending",
-    digiflazz_status: "Pending",
-    product_name: "Telkomsel 20.000",
-    customer_no: "081234567890",
-    payment_method_name: "bca",
-    payment_type: "bank_transfer",
-    // url: "1234567890123456", // Untuk VA
-    url: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ORDER-123456", // Untuk QRIS
-    gross_amount: 21000,
-    serial_number: "12345678901234567890/KWH", // Untuk PLN token
-    // serial_number: "SN1234567890", // Untuk non-PLN
-    digiflazz_data: {
-      message: "Transaksi diproses melalui DigiFlazz",
-    },
-    created_at: new Date().toISOString(),
+  // const dummyData = {
+  //   order_id: "ORDER-123456",
+  //   transaction_status: "pending",
+  //   digiflazz_status: "Pending",
+  //   product_name: "Telkomsel 20.000",
+  //   customer_no: "081234567890",
+  //   payment_method_name: "bca",
+  //   payment_type: "bank_transfer",
+  //   // url: "1234567890123456", // Untuk VA
+  //   url: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ORDER-123456", // Untuk QRIS
+  //   gross_amount: 21000,
+  //   serial_number: "12345678901234567890/KWH", // Untuk PLN token
+  //   // serial_number: "SN1234567890", // Untuk non-PLN
+  //   digiflazz_data: {
+  //     message: "Transaksi diproses melalui DigiFlazz",
+  //   },
+  //   created_at: new Date().toISOString(),
+  // };
+
+  const fetchHistory = async () => {
+    try {
+      const response = await axios.get(`${url}/api/history/${order_id}`);
+      setFinalData(response.data.data);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
   // Gunakan data dummy jika props tidak ada
-  const finalData = data || dummyData;
-  const finalOrderId = orderId || "ORDER-123456";
+  const [finalData, setFinalData] = useState({});
+
+  console.log(finalData);
+
+  const finalOrderId = order_id;
 
   const [copied, setCopied] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
@@ -509,40 +530,40 @@ export default function History({ data, error, orderId }) {
   /* =====================
         DEMO CONTROLS
     ====================== */
-  const DemoControls = () => (
-    <div className="bg-gray-900 rounded-xl p-4 mb-6 border border-gray-700">
-      <h3 className="font-semibold mb-3 text-yellow-400">Demo Controls</h3>
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => handleManualStatusUpdate("settlement", "Sukses")}
-          className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded-lg text-sm transition-colors"
-        >
-          Set Berhasil
-        </button>
-        <button
-          onClick={() => handleManualStatusUpdate("expired", "Gagal")}
-          className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg text-sm transition-colors"
-        >
-          Set Expired
-        </button>
-        <button
-          onClick={() => handleManualStatusUpdate("pending", "Pending")}
-          className="bg-yellow-600 hover:bg-yellow-700 px-3 py-2 rounded-lg text-sm transition-colors"
-        >
-          Reset ke Pending
-        </button>
-        <button
-          onClick={() => setTimeLeft(300)}
-          className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg text-sm transition-colors"
-        >
-          Reset Timer (5:00)
-        </button>
-      </div>
-      <p className="text-gray-400 text-xs mt-2">
-        Gunakan tombol di atas untuk simulasi status transaksi
-      </p>
-    </div>
-  );
+  // const DemoControls = () => (
+  //   <div className="bg-gray-900 rounded-xl p-4 mb-6 border border-gray-700">
+  //     <h3 className="font-semibold mb-3 text-yellow-400">Demo Controls</h3>
+  //     <div className="flex flex-wrap gap-2">
+  //       <button
+  //         onClick={() => handleManualStatusUpdate("settlement", "Sukses")}
+  //         className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded-lg text-sm transition-colors"
+  //       >
+  //         Set Berhasil
+  //       </button>
+  //       <button
+  //         onClick={() => handleManualStatusUpdate("expired", "Gagal")}
+  //         className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg text-sm transition-colors"
+  //       >
+  //         Set Expired
+  //       </button>
+  //       <button
+  //         onClick={() => handleManualStatusUpdate("pending", "Pending")}
+  //         className="bg-yellow-600 hover:bg-yellow-700 px-3 py-2 rounded-lg text-sm transition-colors"
+  //       >
+  //         Reset ke Pending
+  //       </button>
+  //       <button
+  //         onClick={() => setTimeLeft(300)}
+  //         className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg text-sm transition-colors"
+  //       >
+  //         Reset Timer (5:00)
+  //       </button>
+  //     </div>
+  //     <p className="text-gray-400 text-xs mt-2">
+  //       Gunakan tombol di atas untuk simulasi status transaksi
+  //     </p>
+  //   </div>
+  // );
 
   /* =====================
         MAIN PAGE
@@ -554,16 +575,7 @@ export default function History({ data, error, orderId }) {
       <div className="min-h-screen text-white py-8">
         <div className="max-w-4xl mx-auto px-4">
           {/* DEMO CONTROLS */}
-          <DemoControls />
-
-          {/* HEADER */}
-          <Link
-            href="/"
-            className="flex items-center text-gray-400 mb-4 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Kembali ke Beranda
-          </Link>
+          {/* <DemoControls /> */}
 
           {/* STATUS */}
           <div className="bg-gray-800 rounded-xl p-6 mb-6">
@@ -715,7 +727,7 @@ export default function History({ data, error, orderId }) {
               <div className="flex justify-between py-2">
                 <span className="text-gray-400">Metode Pembayaran</span>
                 <span className="font-medium">
-                  {finalData.payment_method_name.toUpperCase()}
+                  {finalData.payment_method_name}
                 </span>
               </div>
               {/* DigiFlazz Status */}

@@ -3,13 +3,16 @@
 import React, { useState, useEffect } from "react";
 import FormatRupiah from "../../../components/home/FormatRupiah";
 import axios from "axios";
-import { useParams } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
 import Image from "next/image";
+import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
 const GamesTopup = ({ payment, appUrl }) => {
   const url = process.env.NEXT_PUBLIC_GOLANG_URL;
   const params = useParams();
   const slug = params.slug;
+  const router = useRouter();
 
   // === COLOR PALETTE DARK THEME ===
   const COLORS = {
@@ -396,7 +399,7 @@ const GamesTopup = ({ payment, appUrl }) => {
     return totalFee;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isFormComplete) {
@@ -424,7 +427,14 @@ const GamesTopup = ({ payment, appUrl }) => {
     };
 
     console.log("Data yang dikirim:", data);
-    // TODO: Kirim ke API transaksi
+    try {
+      const response = await axios.post(`${url}/api/create-transaction`, data);
+      toast.success("Berhasil membuat transaksi");
+
+      router.push(`/history/${response.data.data.transaction.order_id}`);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   if (loading && products.length === 0 && !service) {
