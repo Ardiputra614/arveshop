@@ -20,7 +20,6 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 
 export default function History() {
   const url = process.env.NEXT_PUBLIC_GOLANG_URL;
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080";
   const params = useParams();
   const order_id = params.orderid;
 
@@ -32,15 +31,27 @@ export default function History() {
   const [digiflazzStatus, setDigiflazzStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
 
-  // Gunakan WebSocket hook
+  // 🔴 PERBAIKAN 1: Gunakan WebSocket hook dengan logging
   const { isConnected, orderStatus } = useWebSocket(order_id);
 
-  // Update status dari WebSocket
+  // 🔴 PERBAIKAN 2: Log koneksi WebSocket
+  useEffect(() => {
+    console.log(
+      "WebSocket connection status:",
+      isConnected ? "✅ Live" : "❌ Offline",
+    );
+    if (isConnected) {
+      console.log("Subscribed to order:", order_id);
+    }
+  }, [isConnected, order_id]);
+
+  // 🔴 PERBAIKAN 3: Update status dari WebSocket dengan logging lebih detail
   useEffect(() => {
     if (orderStatus) {
       console.log("🔥 WebSocket update received:", orderStatus);
+      console.log("Current status before update:", status);
 
-      // Map payment status dari backend ke frontend
+      // Map payment status
       const backendStatus = orderStatus.payment_status;
       let newStatus = status;
 
@@ -84,34 +95,14 @@ export default function History() {
         }
       }
 
-      // Update serial number jika ada
-      if (
-        orderStatus.serial_number &&
-        orderStatus.serial_number !== finalData.serial_number
-      ) {
-        console.log("Serial number diterima:", orderStatus.serial_number);
-        setFinalData((prev) => ({
-          ...prev,
-          serial_number: orderStatus.serial_number,
-        }));
-      }
-
-      // Update URL jika ada (untuk QRIS/VA)
-      if (orderStatus.url && orderStatus.url !== finalData.url) {
-        console.log("URL diterima:", orderStatus.url);
-        setFinalData((prev) => ({
-          ...prev,
-          url: orderStatus.url,
-        }));
-      }
+      // Update finalData dengan data terbaru
+      setFinalData((prev) => ({
+        ...prev,
+        ...orderStatus,
+        // Jangan timpa field tertentu jika perlu
+      }));
     }
-  }, [
-    orderStatus,
-    status,
-    digiflazzStatus,
-    finalData.serial_number,
-    finalData.url,
-  ]);
+  }, [orderStatus, status, digiflazzStatus]);
 
   // Fetch initial data
   useEffect(() => {
@@ -123,6 +114,7 @@ export default function History() {
   const fetchHistory = async () => {
     try {
       setLoading(true);
+      console.log("Fetching history for order:", order_id);
       const response = await axios.get(`${url}/api/history/${order_id}`);
       console.log("Initial fetch response:", response.data);
 
@@ -158,32 +150,30 @@ export default function History() {
     }
   };
 
-  // Countdown timer
-  // useEffect(() => {
-  //   if (status !== "pending") return;
+  // 🔴 PERBAIKAN 4: Countdown timer (aktifkan kembali jika perlu)
+  useEffect(() => {
+    if (status !== "pending") return;
 
-  //   const timer = setInterval(() => {
-  //     setTimeLeft((t) => {
-  //       if (t <= 1) {
-  //         clearInterval(timer);
-  //         setStatus("expired");
-  //         return 0;
-  //       }
-  //       return t - 1;
-  //     });
-  //   }, 1000);
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(timer);
+          setStatus("expired");
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
 
-  //   return () => clearInterval(timer);
-  // }, [status]);
+    return () => clearInterval(timer);
+  }, [status]);
 
-  // Format time
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  // Format rupiah
   const formatRupiah = (amount) =>
     new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -191,7 +181,6 @@ export default function History() {
       minimumFractionDigits: 0,
     }).format(amount || 0);
 
-  // Copy handler
   const handleCopy = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -203,7 +192,6 @@ export default function History() {
     }
   };
 
-  // Copy token handler
   const handleCopyToken = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -215,7 +203,6 @@ export default function History() {
     }
   };
 
-  // Download QR
   const downloadQR = () => {
     if (finalData.payment_type === "qris" && finalData.url) {
       const link = document.createElement("a");
@@ -228,7 +215,6 @@ export default function History() {
     }
   };
 
-  // Status config
   const statusConfig = {
     success: {
       icon: CheckCircle,
@@ -258,7 +244,6 @@ export default function History() {
 
   const CurrentIcon = statusConfig[status]?.icon || Clock;
 
-  // Token display component
   const TokenDisplay = ({ serialNumber }) => {
     if (!serialNumber) return null;
 
@@ -298,23 +283,26 @@ export default function History() {
   return (
     <>
       <Head>
-        <title>Transaksi {finalData.order_id}</title>
+        <title>Transaksi {finalData.order_id || order_id}</title>
       </Head>
 
       <div className="min-h-screen text-white py-8">
         <div className="max-w-4xl mx-auto px-4">
-          {/* WebSocket Status */}
-          <div className="mb-4 flex items-center justify-end">
+          {/* WebSocket Status dengan informasi lebih detail */}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-sm text-gray-400">Order ID: {order_id}</div>
             <div className="flex items-center bg-gray-800 px-3 py-1 rounded-full">
               {isConnected ? (
                 <>
-                  <Wifi className="w-4 h-4 text-green-500 mr-2" />
+                  <Wifi className="w-4 h-4 text-green-500 mr-2 animate-pulse" />
                   <span className="text-xs text-green-500">Live</span>
                 </>
               ) : (
                 <>
                   <WifiOff className="w-4 h-4 text-red-500 mr-2" />
-                  <span className="text-xs text-red-500">Offline</span>
+                  <span className="text-xs text-red-500">
+                    Offline - Mencoba reconnect...
+                  </span>
                 </>
               )}
             </div>
