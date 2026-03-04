@@ -21,7 +21,7 @@ import { Fragment, useState, useEffect, useCallback } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
+import api from "@/lib/api";
 import Image from "next/image";
 
 // Mock data for testing
@@ -136,7 +136,7 @@ export default function ServicePage() {
     setLoading(true);
     try {
       // Replace with actual API call
-      const response = await axios.get(`${url}/api/admin/services`);
+      const response = await api.get(`${url}/api/admin/services`);
       setServices(response.data.data);
       setLoading(false);
     } catch (error) {
@@ -150,7 +150,7 @@ export default function ServicePage() {
     setLoading(true);
     try {
       // Replace with actual API call
-      const response = await axios.get(`${url}/api/admin/categories`);
+      const response = await api.get(`${url}/api/admin/categories`);
       setCategories(response.data.data);
       setLoading(false);
     } catch (error) {
@@ -416,17 +416,14 @@ export default function ServicePage() {
       let response;
       if (modalType === "add") {
         // Create new service
-        response = await axios.post(
-          `${url}/api/admin/services`,
-          formDataToSend,
-        );
+        response = await api.post(`${url}/api/admin/services`, formDataToSend);
 
         const newService = response.data.data;
         setServices((prev) => [...prev, newService]);
         toast.success(`Service "${formData.name}" berhasil ditambahkan`);
       } else {
         // Update existing service
-        response = await axios.patch(
+        response = await api.patch(
           `${url}/api/admin/services/${selectedService.id}`,
           formDataToSend,
         );
@@ -470,7 +467,7 @@ export default function ServicePage() {
     }
 
     try {
-      await axios.delete(`${url}/api/admin/services/${service.id}`);
+      await api.delete(`${url}/api/admin/services/${service.id}`);
 
       // Mock delete
       setServices((prev) => prev.filter((s) => s.id !== service.id));

@@ -23,7 +23,7 @@ import { Fragment, useState, useEffect, useCallback } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
+import api from "@/lib/api";
 import Image from "next/image";
 
 // Komponen FormatRupiah untuk display
@@ -200,7 +200,7 @@ export default function PaymentMethodPage() {
     setLoading(true);
     try {
       // Replace with actual API call
-      const response = await axios.get(`${url}/api/admin/payment-method`);
+      const response = await api.get(`${url}/api/admin/payment-method`);
       setPaymentMethods(response.data.data);
       setLoading(false);
     } catch (error) {
@@ -510,7 +510,7 @@ export default function PaymentMethodPage() {
 
       // CREATE PAYMENT METHOD
       if (modalType === "add") {
-        const response = await axios.post(
+        const response = await api.post(
           `${url}/api/admin/payment-method`,
           formDataToSend, // Gunakan formDataToSend, bukan formData state
           {
@@ -528,7 +528,7 @@ export default function PaymentMethodPage() {
       // UPDATE PAYMENT METHOD
       else {
         console.log("data send", formDataToSend);
-        const response = await axios.put(
+        const response = await api.put(
           `${url}/api/admin/payment-method/${selectedMethod.id}`,
           formDataToSend, // Gunakan formDataToSend, bukan formData state
           {

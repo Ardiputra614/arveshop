@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Fragment, useState, useEffect, useCallback } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import axios from "axios";
+import api from "@/lib/api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -205,7 +205,7 @@ export default function CategoryPage() {
 
       if (modalType === "add") {
         // Add new category
-        const response = await axios.post(CATEGORIES_API, payload);
+        const response = await api.post(CATEGORIES_API, payload);
 
         if (response.data && response.data.data) {
           const newCategory = {
@@ -217,7 +217,7 @@ export default function CategoryPage() {
         }
       } else {
         // Update existing category
-        const response = await axios.put(
+        const response = await api.put(
           `${CATEGORIES_API}/${selectedCategory.id}`,
           payload,
         );
@@ -289,7 +289,7 @@ export default function CategoryPage() {
     }
 
     try {
-      await axios.delete(`${CATEGORIES_API}/${category.id}`);
+      await api.delete(`${CATEGORIES_API}/${category.id}`);
 
       setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
       toast.success(`Category "${category.name}" deleted successfully`);

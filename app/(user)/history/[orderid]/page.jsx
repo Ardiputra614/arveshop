@@ -1,7 +1,7 @@
 // app/(user)/history/[orderid]/page.jsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   CheckCircle,
   Copy,
@@ -27,14 +27,66 @@ export default function History() {
   const [copied, setCopied] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
   const [status, setStatus] = useState("pending");
-  const [timeLeft, setTimeLeft] = useState(300);
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [expiryTime, setExpiryTime] = useState(null);
   const [digiflazzStatus, setDigiflazzStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
+  const [isExpiring, setIsExpiring] = useState(false); // 🔴 Cegah multiple request
 
-  // 🔴 PERBAIKAN 1: Gunakan WebSocket hook dengan logging
+  // Ref untuk timer interval
+  const timerRef = useRef(null);
+
+  // 🔴 WebSocket hook
   const { isConnected, orderStatus } = useWebSocket(order_id);
 
-  // 🔴 PERBAIKAN 2: Log koneksi WebSocket
+  // 🔴 Fungsi untuk update status expired ke backend
+  const handleExpireTransaction = async () => {
+    // Cegah multiple request
+    if (isExpiring) return;
+
+    setIsExpiring(true);
+
+    try {
+      console.log(
+        "⏰ Mengirim request expire ke backend untuk order:",
+        order_id,
+      );
+
+      const response = await axios.post(
+        `${url}/transaction/${order_id}/expire`,
+        {}, // body kosong
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      console.log("Response expire:", response.data);
+
+      // Update status lokal
+      setStatus("expired");
+      setTimeLeft(0);
+
+      toast.info("⏰ Waktu pembayaran telah habis");
+
+      // Fetch ulang data untuk memastikan sinkron
+      await fetchHistory();
+    } catch (error) {
+      console.error("Gagal update status expired:", error);
+
+      // Fallback: tetap update UI meskipun request gagal
+      setStatus("expired");
+      setTimeLeft(0);
+
+      toast.warning("⏰ Waktu habis, tapi gagal sinkron ke server");
+    } finally {
+      setIsExpiring(false);
+    }
+  };
+
+  // 🔴 Log koneksi WebSocket
   useEffect(() => {
     console.log(
       "WebSocket connection status:",
@@ -45,19 +97,22 @@ export default function History() {
     }
   }, [isConnected, order_id]);
 
-  // 🔴 PERBAIKAN 3: Update status dari WebSocket dengan logging lebih detail
+  // 🔴 Update status dari WebSocket
   useEffect(() => {
     if (orderStatus) {
       console.log("🔥 WebSocket update received:", orderStatus);
       console.log("Current status before update:", status);
 
-      // Map payment status
       const backendStatus = orderStatus.payment_status;
       let newStatus = status;
 
       if (backendStatus === "settlement" || backendStatus === "capture") {
         newStatus = "success";
         toast.success("✅ Pembayaran berhasil!");
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
       } else if (backendStatus === "pending") {
         newStatus = "pending";
       } else if (
@@ -67,17 +122,19 @@ export default function History() {
       ) {
         newStatus = "failed";
         toast.error("❌ Pembayaran gagal");
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
       } else {
         newStatus = backendStatus || status;
       }
 
-      // Update status jika berubah
       if (newStatus !== status) {
         console.log("Status berubah:", status, "→", newStatus);
         setStatus(newStatus);
       }
 
-      // Update Digiflazz status
       if (
         orderStatus.digiflazz_status &&
         orderStatus.digiflazz_status !== digiflazzStatus
@@ -95,14 +152,75 @@ export default function History() {
         }
       }
 
-      // Update finalData dengan data terbaru
       setFinalData((prev) => ({
         ...prev,
         ...orderStatus,
-        // Jangan timpa field tertentu jika perlu
       }));
+
+      if (orderStatus.midtrans_response?.expiry_time) {
+        const expiryFromMidtrans = new Date(
+          orderStatus.midtrans_response.expiry_time,
+        );
+        console.log("Expiry time dari Midtrans:", expiryFromMidtrans);
+        setExpiryTime(expiryFromMidtrans);
+      }
     }
   }, [orderStatus, status, digiflazzStatus]);
+
+  const calculateTimeLeft = () => {
+    if (!expiryTime) return null;
+    const now = new Date();
+    const diff = expiryTime - now;
+    if (diff <= 0) return 0;
+    return Math.floor(diff / 1000);
+  };
+
+  // 🔴 Timer effect - update setiap detik dan panggil backend saat expired
+  useEffect(() => {
+    if (status !== "pending") {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
+    if (!expiryTime) return;
+
+    const initialTimeLeft = calculateTimeLeft();
+    console.log("Initial time left:", initialTimeLeft, "detik");
+
+    if (initialTimeLeft <= 0) {
+      // Langsung expired, panggil backend
+      handleExpireTransaction();
+      return;
+    }
+
+    setTimeLeft(initialTimeLeft);
+
+    timerRef.current = setInterval(async () => {
+      const remaining = calculateTimeLeft();
+
+      if (remaining <= 0) {
+        // Waktu habis, panggil backend
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+
+        await handleExpireTransaction();
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [expiryTime, status]);
 
   // Fetch initial data
   useEffect(() => {
@@ -122,7 +240,6 @@ export default function History() {
         const data = response.data.data;
         setFinalData(data);
 
-        // Map payment status
         if (
           data.payment_status === "settlement" ||
           data.payment_status === "capture"
@@ -141,6 +258,12 @@ export default function History() {
         }
 
         setDigiflazzStatus(data.digiflazz_status || "Pending");
+
+        if (data.midtrans_response?.expiry_time) {
+          const expiry = new Date(data.midtrans_response.expiry_time);
+          console.log("Expiry time dari initial fetch:", expiry);
+          setExpiryTime(expiry);
+        }
       }
     } catch (error) {
       console.error("Error fetching history:", error);
@@ -150,28 +273,17 @@ export default function History() {
     }
   };
 
-  // 🔴 PERBAIKAN 4: Countdown timer (aktifkan kembali jika perlu)
-  useEffect(() => {
-    if (status !== "pending") return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timer);
-          setStatus("expired");
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [status]);
-
   const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? "0" : ""}${s}`;
+    if (seconds === null || seconds === undefined) return "--:--";
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
   const formatRupiah = (amount) =>
@@ -288,7 +400,7 @@ export default function History() {
 
       <div className="min-h-screen text-white py-8">
         <div className="max-w-4xl mx-auto px-4">
-          {/* WebSocket Status dengan informasi lebih detail */}
+          {/* WebSocket Status */}
           <div className="mb-4 flex items-center justify-between">
             <div className="text-sm text-gray-400">Order ID: {order_id}</div>
             <div className="flex items-center bg-gray-800 px-3 py-1 rounded-full">
@@ -322,10 +434,26 @@ export default function History() {
               </div>
             </div>
 
-            {status === "pending" && (
+            {/* Timer */}
+            {status === "pending" && timeLeft !== null && (
               <div className="mt-4 text-yellow-400 flex items-center">
                 <Clock className="w-4 h-4 mr-2" />
-                Sisa waktu: {formatTime(timeLeft)}
+                <span>
+                  Sisa waktu: {formatTime(timeLeft)}
+                  {expiryTime && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      (s.d. {expiryTime.toLocaleTimeString("id-ID")})
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {/* Loading indicator saat expire request */}
+            {isExpiring && (
+              <div className="mt-2 text-xs text-blue-400 flex items-center">
+                <div className="animate-spin rounded-full h-3 w-3 border border-blue-400 border-t-transparent mr-2"></div>
+                Mensinkronkan status...
               </div>
             )}
           </div>
@@ -447,6 +575,23 @@ export default function History() {
                     })}
                 </span>
               </div>
+
+              {/* Tampilkan expiry time dari Midtrans */}
+              {expiryTime && (
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-400">Batas Pembayaran</span>
+                  <span className="font-medium text-yellow-400">
+                    {expiryTime.toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between py-2 font-bold border-t border-gray-700 pt-4 mt-2">
                 <span>Total Pembayaran</span>
                 <span className="text-lg">
