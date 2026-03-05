@@ -511,7 +511,7 @@ export default function HistoryPage() {
                       <div className="mt-2 flex justify-end gap-1.5">
                         <button
                           onClick={() =>
-                            router.push(`/history/${transaction.id}`)
+                            router.push(`/history/${transaction.order_id}`)
                           }
                           className="text-[10px] bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded border border-gray-700 text-gray-300"
                         >
