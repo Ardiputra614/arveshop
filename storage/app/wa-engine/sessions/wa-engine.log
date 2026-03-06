@@ -1,0 +1,170 @@
+[2026-03-06T13:04:08.870Z] [system] [ERROR] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+[2026-03-06T13:04:35.669Z] [system] [SUCCESS] Server closed
+[2026-03-06T13:04:47.815Z] [system] [ERROR] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+[2026-03-06T13:05:18.753Z] [system] [SUCCESS] Server closed
+[2026-03-06T13:05:27.634Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-03-06T13:10:00.634Z] [system] [INFO] Client connected: ATCyKYaA-9Kb08r4AAAB
+[2026-03-06T13:10:16.250Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:10:26.594Z] [device_1772802614494_8lr9ks5w0] [WARNING] Connection closed. Reconnect: false
+[2026-03-06T13:10:28.035Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:11:28.037Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:11:48.039Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:12:08.043Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:12:28.045Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:12:48.046Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:12:55.288Z] [device_1772802614494_8lr9ks5w0] [WARNING] Connection closed. Reconnect: false
+[2026-03-06T13:12:56.889Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:13:56.890Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:14:16.892Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:14:36.894Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:14:56.895Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:15:16.108Z] [system] [INFO] Client disconnected: ATCyKYaA-9Kb08r4AAAB
+[2026-03-06T13:15:16.896Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:15:23.843Z] [system] [INFO] Client connected: ZeNa7KXDeo4XsU-OAAAE
+[2026-03-06T13:15:36.901Z] [device_1772802614494_8lr9ks5w0] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:15:43.667Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:16:43.669Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:17:03.670Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:17:23.672Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:17:43.674Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:18:03.677Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:18:23.679Z] [device_1772802614494_8lr9ks5w0] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:18:30.505Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:18:53.011Z] [device_1772802614494_8lr9ks5w0] [WARNING] Connection closed. Reconnect: false
+[2026-03-06T13:18:54.983Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:19:54.986Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:20:14.988Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:20:34.991Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:20:54.995Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:21:14.996Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:21:35.002Z] [device_1772802614494_8lr9ks5w0] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:21:41.699Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:22:41.701Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:23:01.702Z] [device_1772802614494_8lr9ks5w0] [INFO] QR Code generated
+[2026-03-06T13:23:14.791Z] [device_1772802614494_8lr9ks5w0] [WARNING] Connection closed. Reconnect: false
+[2026-03-06T13:23:43.141Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:24:43.144Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:25:03.145Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:25:23.147Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:25:43.149Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:26:03.150Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:26:23.153Z] [device_1772803421248_p9ojjuj8x] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:26:29.744Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:27:29.745Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:27:49.748Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:28:09.749Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:28:29.752Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:28:49.754Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:29:09.760Z] [device_1772803421248_p9ojjuj8x] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:29:16.484Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:30:16.486Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:30:36.487Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:30:56.489Z] [device_1772803421248_p9ojjuj8x] [INFO] QR Code generated
+[2026-03-06T13:30:59.095Z] [device_1772803421248_p9ojjuj8x] [WARNING] Connection closed. Reconnect: false
+[2026-03-06T13:30:59.097Z] [device_1772803421248_p9ojjuj8x] [INFO] Logging out...
+[2026-03-06T13:31:23.841Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-03-06T13:31:27.413Z] [system] [INFO] Client connected: xPPxbg3EEwLShJ4bAAAB
+[2026-03-06T13:31:58.736Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:31:59.375Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:32:25.996Z] [device_1772803916271_tkfgr2vhx] [WARNING] Connection closed. Reconnect: false
+[2026-03-06T13:32:28.056Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:32:28.220Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:33:28.160Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:33:28.483Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:33:48.416Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:33:48.473Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:34:08.453Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:34:08.500Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:34:28.479Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:34:28.529Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:34:48.507Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:34:48.590Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:35:08.552Z] [device_1772803916271_tkfgr2vhx] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:35:14.965Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:35:15.031Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:36:14.999Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:36:15.090Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:36:35.046Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:36:35.191Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:36:55.111Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:36:55.256Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:37:15.177Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:37:15.306Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:37:35.246Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:37:35.418Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:37:55.359Z] [device_1772803916271_tkfgr2vhx] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:38:03.851Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:38:04.028Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:39:03.927Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:39:04.021Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:39:23.971Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:39:24.063Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:39:35.244Z] [system] [INFO] Client disconnected: xPPxbg3EEwLShJ4bAAAB
+[2026-03-06T13:39:37.872Z] [system] [INFO] Client connected: PAxnHeuIPb5a2ArLAAAD
+[2026-03-06T13:39:41.972Z] [system] [INFO] Client disconnected: PAxnHeuIPb5a2ArLAAAD
+[2026-03-06T13:39:44.013Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:39:44.139Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:40:02.333Z] [system] [INFO] Client connected: 3LBz7KKQL44DBJ_dAAAF
+[2026-03-06T13:40:04.065Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:40:04.187Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:40:24.130Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:40:24.178Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:40:44.155Z] [device_1772803916271_tkfgr2vhx] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:40:51.428Z] [device_1772803916271_tkfgr2vhx] [INFO] QR Code received, generating image...
+[2026-03-06T13:40:51.474Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] QR Code generated successfully
+[2026-03-06T13:41:48.763Z] [device_1772803916271_tkfgr2vhx] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T13:41:56.558Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] Connected: 6287864705664
+[2026-03-06T13:42:39.580Z] [device_1772803916271_tkfgr2vhx] [INFO] Sending to 87864705664...
+[2026-03-06T13:42:43.179Z] [device_1772803916271_tkfgr2vhx] [SUCCESS] Message sent to 87864705664
+[2026-03-06T13:45:09.648Z] [device_1772803916271_tkfgr2vhx] [WARNING] Connection closed. Reconnect: false
+[2026-03-06T13:54:59.111Z] [system] [INFO] Client disconnected: 3LBz7KKQL44DBJ_dAAAF
+[2026-03-06T13:55:00.697Z] [system] [INFO] Client connected: N38sI2yzPEdNTH5CAAAH
+[2026-03-06T13:55:01.241Z] [system] [INFO] Client disconnected: N38sI2yzPEdNTH5CAAAH
+[2026-03-06T13:55:10.945Z] [system] [INFO] Client connected: FcauHMrgyTm9_8kwAAAJ
+[2026-03-06T13:56:00.518Z] [system] [INFO] Client disconnected: FcauHMrgyTm9_8kwAAAJ
+[2026-03-06T13:56:01.511Z] [system] [INFO] Client connected: _ZfwcXOkhH-KmN9CAAAL
+[2026-03-06T13:56:02.453Z] [system] [INFO] Client disconnected: _ZfwcXOkhH-KmN9CAAAL
+[2026-03-06T13:56:10.726Z] [system] [INFO] Client connected: aRDrCG-6TAgcvpjmAAAN
+[2026-03-06T13:57:59.307Z] [system] [INFO] Client disconnected: aRDrCG-6TAgcvpjmAAAN
+[2026-03-06T13:58:00.928Z] [system] [INFO] Client connected: 8D2ugiP5iCgW05rzAAAP
+[2026-03-06T13:58:12.797Z] [system] [INFO] Client disconnected: 8D2ugiP5iCgW05rzAAAP
+[2026-03-06T13:58:23.443Z] [system] [INFO] Client connected: p3HppTkAD1U2iOqqAAAR
+[2026-03-06T14:36:00.072Z] [device_1772807753164_s37vus9w5] [INFO] QR Code received, generating image...
+[2026-03-06T14:36:00.261Z] [device_1772807753164_s37vus9w5] [SUCCESS] QR Code generated successfully
+[2026-03-06T14:36:07.523Z] [device_1772807753164_s37vus9w5] [WARNING] Connection closed. Reconnect: true
+[2026-03-06T14:36:14.983Z] [device_1772807753164_s37vus9w5] [SUCCESS] Connected: 6287864705663
+[2026-03-06T14:51:38.248Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T14:51:41.741Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T14:51:43.607Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705662...
+[2026-03-06T14:51:48.116Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705662
+[2026-03-06T14:57:39.359Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T14:57:44.009Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T15:11:29.879Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T15:11:30.681Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705662...
+[2026-03-06T15:11:33.197Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705662
+[2026-03-06T15:11:33.740Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T15:22:25.363Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T15:22:28.362Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T15:22:30.893Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705662...
+[2026-03-06T15:22:34.870Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705662
+[2026-03-06T15:26:44.342Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705663...
+[2026-03-06T15:26:45.143Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705662...
+[2026-03-06T15:26:45.243Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705663...
+[2026-03-06T15:26:46.963Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705663
+[2026-03-06T15:26:47.431Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705663
+[2026-03-06T15:26:48.463Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705662
+[2026-03-06T15:43:02.613Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T15:43:04.017Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T15:43:06.330Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T15:43:06.944Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T15:43:19.148Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T15:43:23.534Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T15:46:12.048Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T15:46:16.230Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T15:46:17.564Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705662...
+[2026-03-06T15:46:17.665Z] [device_1772807753164_s37vus9w5] [INFO] Sending to 6287864705664...
+[2026-03-06T15:46:20.038Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705662
+[2026-03-06T15:46:20.808Z] [device_1772807753164_s37vus9w5] [SUCCESS] Message sent to 6287864705664
+[2026-03-06T15:49:22.335Z] [system] [INFO] Client disconnected: p3HppTkAD1U2iOqqAAAR
+[2026-03-06T15:51:18.755Z] [system] [INFO] Client connected: -CBS0JGJafrqJVLSAAAT
+[2026-03-06T15:51:23.688Z] [device_1772807753164_s37vus9w5] [WARNING] Connection closed. Reconnect: false

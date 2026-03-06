@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   ChevronDown,
+  WalletCards,
 } from "lucide-react";
 
 export default function AdminLayout({ children }) {
@@ -78,6 +79,11 @@ export default function AdminLayout({ children }) {
       href: "/admin/profil-aplikasi",
       label: "Profil Aplikasi",
       icon: <User className="w-5 h-5" />,
+    },
+    {
+      href: "/admin/topup",
+      label: "Top up",
+      icon: <WalletCards className="w-5 h-5" />,
     },
   ];
 

@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --no-turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "wa-engine": "node storage/app/wa-engine/server.js",
+    "wa-engine:dev": "nodemon storage/app/wa-engine/server.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run wa-engine:dev\"",
+    "postinstall": "cd storage/app/wa-engine && npm install"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
@@ -14,9 +18,12 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.563.0",
     "next": "^15.5.12",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-toastify": "^11.0.5",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "websocket": "^1.0.35"
   },
   "devDependencies": {

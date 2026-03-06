@@ -89,7 +89,7 @@ export default function Navbar({ user }) {
                     </Link>
 
                     <Link
-                      href="/riwayat"
+                      href="/history"
                       className="block px-4 py-3 text-sm text-gray-300 hover:bg-gray-700"
                       onClick={() => setDropdown(false)}
                     >

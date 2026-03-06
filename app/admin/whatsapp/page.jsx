@@ -1,10 +1,16 @@
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Image from "next/image";
+// Di komponen frontend
+import QRCode from "qrcode";
 import {
   Activity,
   Download,
   MessageSquare,
-  Phone,
   Users,
   XCircle,
   Wifi,
@@ -17,7 +23,6 @@ import {
   Trash2,
   BarChart3,
   Clock,
-  Zap,
   Camera,
   ScanLine,
   Smartphone,
@@ -29,117 +34,22 @@ import {
   Filter,
   MoreVertical,
   Settings,
-  Upload,
   ChevronRight,
-  Shield,
-  Globe,
-  Battery,
-  Signal,
-  Lock,
-  Unlock,
+  Zap,
+  WifiIcon,
 } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Dialog, Transition } from "@headlessui/react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import Image from "next/image";
-
-// Mock data
-const mockDevices = [
-  {
-    id: "device_001",
-    name: "Primary Business",
-    status: "connected",
-    number: "+628123456789",
-    type: "primary",
-    qrImage: null,
-    qrGenerated: false,
-    stats: {
-      messagesSent: 1245,
-      messagesFailed: 23,
-      lastActivity: new Date("2024-01-15T10:30:00"),
-      successRate: 98.2,
-    },
-    battery: 87,
-    signal: "excellent",
-    connectionType: "Wi-Fi",
-    lastSeen: "2 minutes ago",
-  },
-  {
-    id: "device_002",
-    name: "Marketing",
-    status: "qr_ready",
-    number: null,
-    type: "marketing",
-    qrImage: "/api/placeholder/300/300",
-    qrGenerated: true,
-    stats: {
-      messagesSent: 0,
-      messagesFailed: 0,
-      lastActivity: null,
-      successRate: 0,
-    },
-    battery: null,
-    signal: null,
-    connectionType: null,
-    lastSeen: null,
-  },
-  {
-    id: "device_003",
-    name: "Backup Device",
-    status: "disconnected",
-    number: "+628987654321",
-    type: "backup",
-    qrImage: null,
-    qrGenerated: false,
-    stats: {
-      messagesSent: 342,
-      messagesFailed: 8,
-      lastActivity: new Date("2024-01-14T18:45:00"),
-      successRate: 97.7,
-    },
-    battery: null,
-    signal: null,
-    connectionType: null,
-    lastSeen: "3 hours ago",
-  },
-];
-
-const mockLogs = [
-  {
-    id: 1,
-    type: "success",
-    device: "Primary Business",
-    message: "Message sent successfully to +628123456789",
-    timestamp: new Date("2024-01-15T10:30:00"),
-  },
-  {
-    id: 2,
-    type: "info",
-    device: "System",
-    message: "Device 'Marketing' QR code generated",
-    timestamp: new Date("2024-01-15T10:25:00"),
-  },
-  {
-    id: 3,
-    type: "warning",
-    device: "Backup Device",
-    message: "Device disconnected unexpectedly",
-    timestamp: new Date("2024-01-15T10:20:00"),
-  },
-  {
-    id: 4,
-    type: "success",
-    device: "Primary Business",
-    message: "Connected to WhatsApp Web",
-    timestamp: new Date("2024-01-15T10:15:00"),
-  },
-];
+import io from "socket.io-client";
 
 export default function WaEnginePage() {
   // State management
-  const [devices, setDevices] = useState(mockDevices);
-  const [logs, setLogs] = useState(mockLogs);
+  const [devices, setDevices] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [stats, setStats] = useState({
+    totalDevices: 0,
+    activeDevices: 0,
+    queueSize: 0,
+    devices: [],
+  });
   const [loading, setLoading] = useState({
     devices: false,
     sending: false,
@@ -151,6 +61,8 @@ export default function WaEnginePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("name");
+  const [socket, setSocket] = useState(null);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   // Modal states
   const [qrModal, setQrModal] = useState({ open: false, device: null });
@@ -166,35 +78,583 @@ export default function WaEnginePage() {
     device_id: "",
     target: "",
     message: "",
-    delay: 2000,
-    schedule: "now",
-    scheduleTime: "",
   });
 
   const [newDevice, setNewDevice] = useState({
     name: "",
     type: "primary",
-    description: "",
   });
 
-  // Stats
-  const [stats, setStats] = useState({
-    totalSent: 1587,
-    totalFailed: 31,
-    totalDevices: 3,
-    activeDevices: 1,
-    queueSize: 0,
-    successRate: 98.1,
-    totalMessages: 1618,
-    dailyAverage: 127,
-  });
+  // API Base URL
+  const API_BASE =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+  const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000";
 
-  // Apply filters and sorting
+  // Socket connection
+  useEffect(() => {
+    const newSocket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      console.log("✅ Socket connected");
+      setSocketConnected(true);
+      addLog({
+        type: "success",
+        device: "System",
+        message: "Connected to WA Engine server",
+      });
+    });
+
+    newSocket.on("qr_generated", ({ deviceId, qrImage, message }) => {
+      console.log("📱 QR RECEIVED for device:", deviceId);
+      console.log("QR Image length:", qrImage?.length);
+
+      // Update devices state
+      setDevices((prev) => {
+        const updated = prev.map((device) =>
+          device.id === deviceId
+            ? {
+                ...device,
+                qrImage: qrImage,
+                status: "qr_ready",
+                qrGenerated: true,
+              }
+            : device,
+        );
+        console.log("Updated devices:", updated);
+        return updated;
+      });
+
+      setLoading((prev) => ({
+        ...prev,
+        qrLoading: { ...prev.qrLoading, [deviceId]: false },
+      }));
+
+      addLog({
+        type: "info",
+        device: "System",
+        message: `QR code generated for device ${deviceId}`,
+      });
+
+      toast.info("QR Code generated. Scan to connect.");
+    });
+
+    newSocket.on("qr_updated", ({ deviceId, qrImage }) => {
+      setDevices((prev) =>
+        prev.map((device) =>
+          device.id === deviceId ? { ...device, qrImage } : device,
+        ),
+      );
+    });
+
+    newSocket.on("device_connected", ({ deviceId, number, message }) => {
+      setDevices((prev) =>
+        prev.map((device) =>
+          device.id === deviceId
+            ? {
+                ...device,
+                status: "connected",
+                number,
+                qrImage: null,
+                qrGenerated: false,
+              }
+            : device,
+        ),
+      );
+
+      setStats((prev) => ({
+        ...prev,
+        activeDevices: prev.activeDevices + 1,
+      }));
+
+      addLog({
+        type: "success",
+        device: "System",
+        message: `📱 Device connected: ${number}`,
+      });
+
+      toast.success(`Device connected successfully`);
+    });
+
+    newSocket.on("device_status", ({ deviceId, status }) => {
+      setDevices((prev) =>
+        prev.map((device) =>
+          device.id === deviceId ? { ...device, status } : device,
+        ),
+      );
+    });
+
+    newSocket.on("message_queued", (data) => {
+      addLog({
+        type: "info",
+        device: "System",
+        message: `📤 Message queued (Position: ${data.queuePosition})`,
+      });
+    });
+
+    newSocket.on("message_result", (data) => {
+      addLog({
+        type: data.success ? "success" : "error",
+        device: "System",
+        message: data.success
+          ? `✅ Message sent successfully`
+          : `❌ Message failed: ${data.error}`,
+      });
+
+      if (data.success) {
+        fetchStats();
+      }
+    });
+
+    newSocket.on("device_removed", ({ deviceId }) => {
+      setDevices((prev) => prev.filter((d) => d.id !== deviceId));
+      addLog({
+        type: "warning",
+        device: "System",
+        message: `Device ${deviceId} removed`,
+      });
+    });
+
+    newSocket.on("error", (error) => {
+      console.error("Socket error:", error);
+      addLog({
+        type: "error",
+        device: "System",
+        message: `Socket error: ${error.message || error}`,
+      });
+    });
+
+    return () => {
+      if (newSocket) {
+        newSocket.disconnect();
+      }
+    };
+  }, []);
+
+  // Fetch devices on mount
+  useEffect(() => {
+    fetchDevices();
+    fetchStats();
+
+    const interval = setInterval(() => {
+      fetchStats();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch devices from API
+  const fetchDevices = async () => {
+    setLoading((prev) => ({ ...prev, devices: true }));
+    try {
+      const response = await fetch(`${API_BASE}/devices`);
+      const data = await response.json();
+
+      if (data.success) {
+        // Transform API data to frontend format
+        const transformedDevices = data.devices.map((device) => ({
+          id: device.id,
+          name: device.name,
+          status: device.status,
+          number: device.number,
+          qrImage: device.qrCode,
+          qrGenerated: !!device.qrCode,
+          type: device.type || "primary",
+          stats: {
+            messagesSent: device.stats?.messagesSent || 0,
+            messagesFailed: device.stats?.messagesFailed || 0,
+            lastActivity: device.stats?.lastActivity,
+            successRate: calculateSuccessRate(
+              device.stats?.messagesSent || 0,
+              device.stats?.messagesFailed || 0,
+            ),
+          },
+        }));
+        setDevices(transformedDevices);
+      }
+    } catch (error) {
+      console.error("Error fetching devices:", error);
+      addLog({
+        type: "error",
+        device: "System",
+        message: "Failed to fetch devices",
+      });
+      toast.error("Failed to fetch devices");
+    } finally {
+      setLoading((prev) => ({ ...prev, devices: false }));
+    }
+  };
+
+  // Fetch stats from API
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/stats`);
+      const data = await response.json();
+
+      if (data.success) {
+        const totalSent =
+          data.stats.devices?.reduce(
+            (acc, d) => acc + (d.messagesSent || 0),
+            0,
+          ) || 0;
+        const totalFailed =
+          data.stats.devices?.reduce(
+            (acc, d) => acc + (d.messagesFailed || 0),
+            0,
+          ) || 0;
+
+        setStats({
+          totalDevices: data.stats.totalDevices || 0,
+          activeDevices: data.stats.activeDevices || 0,
+          queueSize: data.stats.queueSize || 0,
+          totalSent,
+          totalFailed,
+          successRate: calculateSuccessRate(totalSent, totalFailed),
+          devices: data.stats.devices || [],
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
+
+  // Calculate success rate
+  const calculateSuccessRate = (sent, failed) => {
+    const total = sent + failed;
+    if (total === 0) return 100;
+    return Math.round((sent / total) * 100);
+  };
+
+  // Add log entry
+  const addLog = useCallback((log) => {
+    const newLog = {
+      ...log,
+      id: Date.now() + Math.random(),
+      timestamp: new Date(),
+    };
+    setLogs((prev) => [newLog, ...prev].slice(0, 100));
+  }, []);
+
+  // Add new device
+  const handleAddDevice = async () => {
+    if (!newDevice.name.trim()) {
+      toast.error("Please enter a device name");
+      return;
+    }
+
+    setLoading((prev) => ({ ...prev, connecting: true }));
+
+    try {
+      console.log("Adding device:", newDevice);
+
+      const response = await fetch(`${API_BASE}/device/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newDevice.name,
+          type: newDevice.type,
+        }),
+      });
+
+      const data = await response.json();
+      console.log("Add device response:", data);
+
+      if (data.success) {
+        const newDeviceData = {
+          id: data.deviceId,
+          name: data.name,
+          status: "connecting",
+          qrImage: null,
+          qrGenerated: false,
+          number: null,
+          type: newDevice.type,
+          stats: {
+            messagesSent: 0,
+            messagesFailed: 0,
+            lastActivity: null,
+            successRate: 100,
+          },
+        };
+
+        setDevices((prev) => {
+          const updated = [...prev, newDeviceData];
+          console.log("Devices after add:", updated);
+          return updated;
+        });
+
+        addLog({
+          type: "success",
+          device: "System",
+          message: `Device "${newDevice.name}" added successfully`,
+        });
+
+        toast.success("Device added successfully");
+        setNewDevice({ name: "", type: "primary" });
+        setAddDeviceModal(false);
+
+        // Fetch stats after adding
+        fetchStats();
+
+        // Request QR generation via socket after a delay
+        if (socket && socket.connected) {
+          console.log("Requesting QR for device:", data.deviceId);
+
+          setTimeout(() => {
+            socket.emit("request_qr", { deviceId: data.deviceId });
+            setLoading((prev) => ({
+              ...prev,
+              qrLoading: { ...prev.qrLoading, [data.deviceId]: true },
+            }));
+          }, 2000); // Increase delay to 2 seconds
+        } else {
+          console.log("Socket not connected, waiting...");
+          // If socket not connected, try again after socket connects
+          const checkSocket = setInterval(() => {
+            if (socket?.connected) {
+              console.log("Socket now connected, requesting QR");
+              socket.emit("request_qr", { deviceId: data.deviceId });
+              setLoading((prev) => ({
+                ...prev,
+                qrLoading: { ...prev.qrLoading, [data.deviceId]: true },
+              }));
+              clearInterval(checkSocket);
+            }
+          }, 1000);
+
+          // Clear after 10 seconds
+          setTimeout(() => clearInterval(checkSocket), 10000);
+        }
+      }
+    } catch (error) {
+      console.error("Error adding device:", error);
+      toast.error("Failed to add device");
+    } finally {
+      setLoading((prev) => ({ ...prev, connecting: false }));
+    }
+  };
+
+  // Refresh QR code
+  const handleRefreshQR = async (deviceId) => {
+    setLoading((prev) => ({
+      ...prev,
+      qrLoading: { ...prev.qrLoading, [deviceId]: true },
+    }));
+
+    try {
+      const response = await fetch(`${API_BASE}/qr/${deviceId}/refresh`, {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (data.success && socket) {
+        socket.emit("request_qr", { deviceId });
+        addLog({
+          type: "info",
+          device: "System",
+          message: "Refreshing QR code...",
+        });
+        toast.info("Generating new QR code...");
+      }
+    } catch (error) {
+      console.error("Error refreshing QR:", error);
+      toast.error("Failed to refresh QR code");
+    } finally {
+      setTimeout(() => {
+        setLoading((prev) => ({
+          ...prev,
+          qrLoading: { ...prev.qrLoading, [deviceId]: false },
+        }));
+      }, 2000);
+    }
+  };
+
+  // Disconnect device
+  const handleDisconnect = async (deviceId) => {
+    if (!confirm("Are you sure you want to disconnect this device?")) return;
+
+    setLoading((prev) => ({
+      ...prev,
+      disconnecting: { ...prev.disconnecting, [deviceId]: true },
+    }));
+
+    try {
+      const response = await fetch(`${API_BASE}/device/${deviceId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setDevices((prev) =>
+          prev.map((device) =>
+            device.id === deviceId
+              ? { ...device, status: "disconnected" }
+              : device,
+          ),
+        );
+
+        setStats((prev) => ({
+          ...prev,
+          activeDevices: prev.activeDevices - 1,
+        }));
+
+        addLog({
+          type: "warning",
+          device: "System",
+          message: "Device disconnected",
+        });
+
+        toast.info("Device disconnected");
+      }
+    } catch (error) {
+      console.error("Error disconnecting device:", error);
+      toast.error("Failed to disconnect device");
+    } finally {
+      setLoading((prev) => ({
+        ...prev,
+        disconnecting: { ...prev.disconnecting, [deviceId]: false },
+      }));
+    }
+  };
+
+  // Delete device
+  const handleDelete = async (deviceId) => {
+    const device = devices.find((d) => d.id === deviceId);
+    if (!device) return;
+
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete "${device.name}"? All session data will be lost.`,
+      )
+    )
+      return;
+
+    try {
+      const response = await fetch(`${API_BASE}/device/${deviceId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setDevices((prev) => prev.filter((d) => d.id !== deviceId));
+
+        addLog({
+          type: "error",
+          device: "System",
+          message: `Device "${device.name}" deleted`,
+        });
+
+        toast.success("Device deleted successfully");
+        fetchStats();
+      }
+    } catch (error) {
+      console.error("Error deleting device:", error);
+      toast.error("Failed to delete device");
+    }
+  };
+
+  // Send message
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+
+    if (!sendForm.device_id || !sendForm.target || !sendForm.message) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    const device = devices.find((d) => d.id === sendForm.device_id);
+    if (!device || device.status !== "connected") {
+      toast.error("Device is not connected");
+      return;
+    }
+
+    setLoading((prev) => ({ ...prev, sending: true }));
+
+    try {
+      const response = await fetch(`${API_BASE}/send-message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(sendForm),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        addLog({
+          type: "success",
+          device: device.name,
+          message: `Message queued for ${sendForm.target}`,
+        });
+
+        setStats((prev) => ({
+          ...prev,
+          queueSize: data.queuePosition,
+        }));
+
+        toast.success("Message queued successfully");
+        setSendForm((prev) => ({ ...prev, target: "", message: "" }));
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message");
+    } finally {
+      setLoading((prev) => ({ ...prev, sending: false }));
+    }
+  };
+
+  // Send bulk message
+  const handleSendBulk = async (deviceId, targets, message) => {
+    if (!targets.length) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/send-bulk`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          device_id: deviceId,
+          targets,
+          message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`${targets.length} messages queued`);
+        addLog({
+          type: "success",
+          device: "System",
+          message: `${targets.length} bulk messages queued`,
+        });
+      }
+    } catch (error) {
+      console.error("Error sending bulk messages:", error);
+      toast.error("Failed to send bulk messages");
+    }
+  };
+
+  // Filter and sort devices
   const filteredDevices = devices
     .filter((device) => {
       if (
         searchQuery &&
-        !device.name.toLowerCase().includes(searchQuery.toLowerCase())
+        !device.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !device.number?.toLowerCase().includes(searchQuery.toLowerCase())
       ) {
         return false;
       }
@@ -221,16 +681,6 @@ export default function WaEnginePage() {
       }
     });
 
-  // Add log entry
-  const addLog = useCallback((log) => {
-    const newLog = {
-      ...log,
-      id: Date.now() + Math.random(),
-      timestamp: new Date(),
-    };
-    setLogs((prev) => [newLog, ...prev].slice(0, 100));
-  }, []);
-
   // Get status icon
   const getStatusIcon = (status) => {
     switch (status) {
@@ -241,6 +691,7 @@ export default function WaEnginePage() {
       case "qr_ready":
         return <QrCode className="w-4 h-4 text-yellow-500" />;
       case "connecting":
+      case "reconnecting":
         return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
       default:
         return <AlertCircle className="w-4 h-4 text-gray-500" />;
@@ -257,6 +708,7 @@ export default function WaEnginePage() {
       case "qr_ready":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "connecting":
+      case "reconnecting":
         return "bg-blue-100 text-blue-800 border-blue-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -297,166 +749,13 @@ export default function WaEnginePage() {
     });
   };
 
-  // Add new device
-  const handleAddDevice = () => {
-    if (!newDevice.name.trim()) {
-      toast.error("Please enter a device name");
-      return;
-    }
-
-    setLoading((prev) => ({ ...prev, connecting: true }));
-
-    setTimeout(() => {
-      const newDeviceData = {
-        id: `device_${Date.now()}`,
-        name: newDevice.name,
-        status: "qr_ready",
-        number: null,
-        type: newDevice.type,
-        qrImage: "/api/placeholder/300/300",
-        qrGenerated: true,
-        stats: {
-          messagesSent: 0,
-          messagesFailed: 0,
-          lastActivity: null,
-          successRate: 0,
-        },
-        battery: null,
-        signal: null,
-        connectionType: null,
-        lastSeen: null,
-      };
-
-      setDevices((prev) => [...prev, newDeviceData]);
-      setStats((prev) => ({ ...prev, totalDevices: prev.totalDevices + 1 }));
-
-      addLog({
-        type: "success",
-        device: "System",
-        message: `Device "${newDevice.name}" added successfully`,
-      });
-
-      toast.success("Device added successfully");
-
-      setNewDevice({ name: "", type: "primary", description: "" });
-      setAddDeviceModal(false);
-      setLoading((prev) => ({ ...prev, connecting: false }));
-    }, 1500);
-  };
-
-  // Refresh QR code
-  const handleRefreshQR = (deviceId) => {
-    setLoading((prev) => ({
-      ...prev,
-      qrLoading: { ...prev.qrLoading, [deviceId]: true },
-    }));
-
-    setTimeout(() => {
-      addLog({
-        type: "info",
-        device: "System",
-        message: "QR code refreshed",
-      });
-
-      toast.success("QR code refreshed successfully");
-      setLoading((prev) => ({
-        ...prev,
-        qrLoading: { ...prev.qrLoading, [deviceId]: false },
-      }));
-    }, 2000);
-  };
-
-  // Disconnect device
-  const handleDisconnect = (deviceId) => {
-    setLoading((prev) => ({
-      ...prev,
-      disconnecting: { ...prev.disconnecting, [deviceId]: true },
-    }));
-
-    setTimeout(() => {
-      setDevices((prev) =>
-        prev.map((device) =>
-          device.id === deviceId
-            ? { ...device, status: "disconnected" }
-            : device,
-        ),
-      );
-
-      setStats((prev) => ({ ...prev, activeDevices: prev.activeDevices - 1 }));
-
-      addLog({
-        type: "warning",
-        device: "System",
-        message: "Device disconnected",
-      });
-
-      toast.info("Device disconnected");
-      setLoading((prev) => ({
-        ...prev,
-        disconnecting: { ...prev.disconnecting, [deviceId]: false },
-      }));
-    }, 1000);
-  };
-
-  // Delete device
-  const handleDelete = (deviceId) => {
-    const device = devices.find((d) => d.id === deviceId);
-    if (confirm(`Are you sure you want to delete "${device?.name}"?`)) {
-      setDevices((prev) => prev.filter((d) => d.id !== deviceId));
-
-      addLog({
-        type: "error",
-        device: "System",
-        message: `Device "${device?.name}" deleted`,
-      });
-
-      toast.success("Device deleted successfully");
-    }
-  };
-
-  // Send message
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-
-    if (!sendForm.device_id || !sendForm.target || !sendForm.message) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-
-    setLoading((prev) => ({ ...prev, sending: true }));
-
-    setTimeout(() => {
-      addLog({
-        type: "success",
-        device:
-          devices.find((d) => d.id === sendForm.device_id)?.name || "Unknown",
-        message: `Message sent to ${sendForm.target}`,
-      });
-
-      setStats((prev) => ({
-        ...prev,
-        totalSent: prev.totalSent + 1,
-        totalMessages: prev.totalMessages + 1,
-        successRate: (
-          ((prev.totalSent + 1) / (prev.totalMessages + 1)) *
-          100
-        ).toFixed(1),
-      }));
-
-      toast.success("Message sent successfully");
-
-      setSendForm((prev) => ({ ...prev, target: "", message: "" }));
-      setLoading((prev) => ({ ...prev, sending: false }));
-    }, 2000);
-  };
-
   // Copy to clipboard
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   };
 
-  // QR Code Display Component
+  // Di komponen frontend, pastikan QR code ditampilkan dengan benar
   const QRCodeDisplay = ({ device, showModal = false }) => {
     return (
       <div className={`${showModal ? "p-2" : "space-y-4"}`}>
@@ -465,12 +764,11 @@ export default function WaEnginePage() {
             className={`${showModal ? "w-72 h-72" : "w-48 h-48"} mx-auto rounded-lg border-4 border-white shadow-xl bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center`}
           >
             {device.qrImage ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-48 h-48 bg-gray-200 rounded animate-pulse mb-2"></div>
-                  <p className="text-sm text-gray-600">QR Code Placeholder</p>
-                </div>
-              </div>
+              <img
+                src={device.qrImage}
+                alt="WhatsApp QR Code"
+                className={`${showModal ? "w-72 h-72" : "w-48 h-48"} rounded-lg`}
+              />
             ) : (
               <div className="text-center p-4">
                 <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -515,63 +813,11 @@ export default function WaEnginePage() {
     );
   };
 
-  // Battery indicator
-  const BatteryIndicator = ({ percentage }) => {
-    if (!percentage) return null;
-
-    let color = "text-green-500";
-    if (percentage < 20) color = "text-red-500";
-    else if (percentage < 50) color = "text-yellow-500";
-
-    return (
-      <div className="flex items-center space-x-1">
-        <div className="relative w-6 h-3 border border-gray-400 rounded">
-          <div
-            className={`absolute top-0 left-0 h-full ${color} rounded-sm`}
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-        <div className="w-1 h-2 bg-gray-400" />
-        <span className="text-xs font-medium">{percentage}%</span>
-      </div>
-    );
-  };
-
-  // Signal indicator
-  const SignalIndicator = ({ signal }) => {
-    if (!signal) return null;
-
-    return (
-      <div className="flex items-center space-x-0.5">
-        {["low", "medium", "good", "excellent"].map((level, index) => {
-          let height = 2;
-          let opacity = 0.3;
-
-          if (signal === "excellent" && index <= 3) opacity = 1;
-          else if (signal === "good" && index <= 2) opacity = 1;
-          else if (signal === "medium" && index <= 1) opacity = 1;
-          else if (signal === "low" && index <= 0) opacity = 1;
-
-          return (
-            <div
-              key={index}
-              className={`w-1 bg-green-500 rounded-full`}
-              style={{
-                height: `${(index + 1) * 4}px`,
-                opacity: opacity,
-              }}
-            />
-          );
-        })}
-      </div>
-    );
-  };
-
   return (
     <>
       <ToastContainer position="top-right" autoClose={3000} />
 
-      <div className="py-8">
+      <div className="py-8 text-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
@@ -586,24 +832,36 @@ export default function WaEnginePage() {
                       WhatsApp Engine
                     </h1>
                     <p className="text-gray-600 mt-1">
-                      Manage your WhatsApp connections and send messages
+                      Multi-Device WhatsApp Gateway
                     </p>
                   </div>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      socketConnected ? "bg-green-500" : "bg-red-500"
+                    } animate-pulse`}
+                  />
+                  <span className="text-sm text-gray-600">
+                    {socketConnected ? "Connected" : "Disconnected"}
+                  </span>
+                </div>
                 <button
                   onClick={() => setAddDeviceModal(true)}
-                  className="inline-flex items-center justify-center px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-md hover:shadow-lg"
+                  className="inline-flex items-center justify-center px-5 py-3 bg-blue-500 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-md hover:shadow-lg"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Add Device
                 </button>
                 <button
-                  onClick={() => setActiveTab("devices")}
+                  onClick={fetchDevices}
                   className="inline-flex items-center justify-center px-4 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 >
-                  <RefreshCw className="w-5 h-5" />
+                  <RefreshCw
+                    className={`w-5 h-5 ${loading.devices ? "animate-spin" : ""}`}
+                  />
                 </button>
               </div>
             </div>
@@ -614,8 +872,7 @@ export default function WaEnginePage() {
             {[
               {
                 title: "Messages Sent",
-                value: stats.totalSent,
-                change: "+12.5%",
+                value: stats.totalSent || 0,
                 icon: MessageSquare,
                 color: "green",
                 bgColor: "bg-green-50",
@@ -623,8 +880,7 @@ export default function WaEnginePage() {
               },
               {
                 title: "Active Devices",
-                value: `${stats.activeDevices}/${stats.totalDevices}`,
-                change: "100% online",
+                value: `${stats.activeDevices || 0}/${stats.totalDevices || 0}`,
                 icon: Users,
                 color: "blue",
                 bgColor: "bg-blue-50",
@@ -632,8 +888,7 @@ export default function WaEnginePage() {
               },
               {
                 title: "Success Rate",
-                value: `${stats.successRate}%`,
-                change: "+2.1%",
+                value: `${stats.successRate || 100}%`,
                 icon: BarChart3,
                 color: "purple",
                 bgColor: "bg-purple-50",
@@ -641,8 +896,7 @@ export default function WaEnginePage() {
               },
               {
                 title: "Queue Size",
-                value: stats.queueSize,
-                change: "No pending",
+                value: stats.queueSize || 0,
                 icon: Clock,
                 color: "amber",
                 bgColor: "bg-amber-50",
@@ -658,11 +912,6 @@ export default function WaEnginePage() {
                     <p className="text-sm text-gray-600">{stat.title}</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">
                       {stat.value}
-                    </p>
-                    <p
-                      className={`text-xs ${stat.change.includes("+") ? "text-green-600" : "text-gray-500"} mt-1`}
-                    >
-                      {stat.change}
                     </p>
                   </div>
                   <div className={`p-3 rounded-lg ${stat.bgColor}`}>
@@ -695,11 +944,6 @@ export default function WaEnginePage() {
                     label: "System Logs",
                     icon: Activity,
                     count: logs.length,
-                  },
-                  {
-                    id: "analytics",
-                    label: "Analytics",
-                    icon: BarChart3,
                   },
                 ].map((tab) => (
                   <button
@@ -734,7 +978,7 @@ export default function WaEnginePage() {
               {activeTab === "devices" && (
                 <div className="space-y-6">
                   {/* Filters */}
-                  <div className="flex text-black flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                  <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                     <div className="flex-1">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -742,7 +986,7 @@ export default function WaEnginePage() {
                           type="text"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Search devices..."
+                          placeholder="Search devices by name or number..."
                           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
@@ -769,16 +1013,6 @@ export default function WaEnginePage() {
                         <option value="messages">Sort by Messages</option>
                         <option value="lastActivity">Sort by Activity</option>
                       </select>
-                      <button
-                        onClick={() => {
-                          setSearchQuery("");
-                          setFilterStatus("all");
-                          setSortBy("name");
-                        }}
-                        className="px-3 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                      >
-                        Reset
-                      </button>
                     </div>
                   </div>
 
@@ -871,11 +1105,6 @@ export default function WaEnginePage() {
                               >
                                 <Settings className="w-4 h-4" />
                               </button>
-                              <div className="relative">
-                                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-                                  <MoreVertical className="w-4 h-4" />
-                                </button>
-                              </div>
                             </div>
                           </div>
 
@@ -883,7 +1112,6 @@ export default function WaEnginePage() {
                           <div className="space-y-4">
                             {device.status === "connected" ? (
                               <>
-                                {/* Device Stats */}
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="bg-white p-4 rounded-lg border">
                                     <p className="text-xs text-gray-600 mb-1">
@@ -900,25 +1128,14 @@ export default function WaEnginePage() {
                                   </div>
                                   <div className="bg-white p-4 rounded-lg border">
                                     <p className="text-xs text-gray-600 mb-1">
-                                      Connection Info
+                                      Last Activity
                                     </p>
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-3">
-                                        <BatteryIndicator
-                                          percentage={device.battery}
-                                        />
-                                        <SignalIndicator
-                                          signal={device.signal}
-                                        />
-                                      </div>
-                                      <span className="text-xs text-gray-500">
-                                        {device.lastSeen}
-                                      </span>
-                                    </div>
+                                    <p className="text-sm font-semibold text-gray-900">
+                                      {formatTime(device.stats.lastActivity)}
+                                    </p>
                                   </div>
                                 </div>
 
-                                {/* Actions */}
                                 <div className="flex space-x-3">
                                   <button
                                     onClick={() => handleDisconnect(device.id)}
@@ -933,7 +1150,13 @@ export default function WaEnginePage() {
                                     Disconnect
                                   </button>
                                   <button
-                                    onClick={() => setActiveTab("send")}
+                                    onClick={() => {
+                                      setActiveTab("send");
+                                      setSendForm((prev) => ({
+                                        ...prev,
+                                        device_id: device.id,
+                                      }));
+                                    }}
                                     className="flex-1 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 flex items-center justify-center"
                                   >
                                     <Send className="w-4 h-4 mr-2" />
@@ -950,7 +1173,7 @@ export default function WaEnginePage() {
                                         Scan QR Code
                                       </p>
                                       <p className="text-xs text-gray-500">
-                                        Expires in 5 minutes
+                                        Scan with WhatsApp to connect
                                       </p>
                                     </div>
                                     <button
@@ -984,7 +1207,6 @@ export default function WaEnginePage() {
                               </div>
                             )}
 
-                            {/* Delete Button */}
                             <button
                               onClick={() => handleDelete(device.id)}
                               className="w-full py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg flex items-center justify-center"
@@ -1061,10 +1283,6 @@ export default function WaEnginePage() {
                                     <CheckCircle className="w-3 h-3 mr-1" />
                                     {device.stats.successRate}% success
                                   </span>
-                                  <span className="flex items-center">
-                                    <Clock className="w-3 h-3 mr-1" />
-                                    {formatDate(device.stats.lastActivity)}
-                                  </span>
                                 </div>
                               </div>
                             </label>
@@ -1082,7 +1300,7 @@ export default function WaEnginePage() {
                     {/* Recipient */}
                     <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl border border-gray-200">
                       <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Recipient Information *
+                        Phone Number *
                       </label>
                       <div className="space-y-3">
                         <div className="flex items-center">
@@ -1095,7 +1313,7 @@ export default function WaEnginePage() {
                             onChange={(e) =>
                               setSendForm((prev) => ({
                                 ...prev,
-                                target: e.target.value,
+                                target: e.target.value.replace(/\D/g, ""),
                               }))
                             }
                             placeholder="81234567890"
@@ -1103,19 +1321,9 @@ export default function WaEnginePage() {
                             required
                           />
                         </div>
-                        <div className="flex items-center space-x-4">
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard("+628123456789")}
-                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                          >
-                            <Copy className="w-3 h-3 mr-1" />
-                            Copy example number
-                          </button>
-                          <span className="text-xs text-gray-500">
-                            Format: 81234567890 (without +62)
-                          </span>
-                        </div>
+                        <p className="text-xs text-gray-500">
+                          Format: 81234567890 (without +62)
+                        </p>
                       </div>
                     </div>
 
@@ -1133,7 +1341,7 @@ export default function WaEnginePage() {
                           }))
                         }
                         rows={6}
-                        placeholder="Type your message here... (You can use emoji 😊)"
+                        placeholder="Type your message here..."
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       />
@@ -1153,78 +1361,6 @@ export default function WaEnginePage() {
                       </div>
                     </div>
 
-                    {/* Settings */}
-                    <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl border border-gray-200">
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        ⚙️ Message Settings
-                      </label>
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-gray-600">
-                              Delay between messages
-                            </span>
-                            <span className="font-semibold text-blue-600">
-                              {sendForm.delay}ms
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min="500"
-                            max="10000"
-                            step="500"
-                            value={sendForm.delay}
-                            onChange={(e) =>
-                              setSendForm((prev) => ({
-                                ...prev,
-                                delay: parseInt(e.target.value),
-                              }))
-                            }
-                            className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500"
-                          />
-                          <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>Fast</span>
-                            <span className="font-medium">Recommended</span>
-                            <span>Safe</span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm text-gray-600 mb-2 block">
-                            Schedule Message
-                          </label>
-                          <div className="flex items-center space-x-3">
-                            <select
-                              value={sendForm.schedule}
-                              onChange={(e) =>
-                                setSendForm((prev) => ({
-                                  ...prev,
-                                  schedule: e.target.value,
-                                }))
-                              }
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
-                            >
-                              <option value="now">Send Now</option>
-                              <option value="schedule">Schedule</option>
-                            </select>
-                            {sendForm.schedule === "schedule" && (
-                              <input
-                                type="datetime-local"
-                                value={sendForm.scheduleTime}
-                                onChange={(e) =>
-                                  setSendForm((prev) => ({
-                                    ...prev,
-                                    scheduleTime: e.target.value,
-                                  }))
-                                }
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Submit */}
                     <button
                       type="submit"
@@ -1234,12 +1370,12 @@ export default function WaEnginePage() {
                       {loading.sending ? (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>Sending Message...</span>
+                          <span>Sending...</span>
                         </>
                       ) : (
                         <>
                           <Send className="w-5 h-5" />
-                          <span>Send WhatsApp Message</span>
+                          <span>Send Message</span>
                         </>
                       )}
                     </button>
@@ -1264,16 +1400,10 @@ export default function WaEnginePage() {
                         onClick={() => setLogs([])}
                         className="px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
                       >
-                        Clear All Logs
+                        Clear All
                       </button>
                       <button
-                        onClick={() =>
-                          addLog({
-                            type: "info",
-                            device: "System",
-                            message: "Manual log refresh",
-                          })
-                        }
+                        onClick={fetchDevices}
                         className="px-4 py-2.5 text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 flex items-center"
                       >
                         <RefreshCw className="w-4 h-4 mr-2" />
@@ -1346,91 +1476,6 @@ export default function WaEnginePage() {
                   </div>
                 </div>
               )}
-
-              {/* Analytics Tab */}
-              {activeTab === "analytics" && (
-                <div>
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Analytics Dashboard
-                    </h3>
-                    <p className="text-gray-500">
-                      Performance metrics and insights
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl border border-gray-200">
-                      <h4 className="font-medium text-gray-900 mb-4">
-                        Device Performance
-                      </h4>
-                      <div className="space-y-4">
-                        {devices.map((device) => (
-                          <div
-                            key={device.id}
-                            className="flex items-center justify-between"
-                          >
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {device.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {device.status} • {device.type}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-semibold text-gray-900">
-                                {device.stats.messagesSent} messages
-                              </p>
-                              <p className="text-xs text-green-600">
-                                {device.stats.successRate}% success
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-white p-6 rounded-xl border border-gray-200">
-                      <h4 className="font-medium text-gray-900 mb-4">
-                        Message Statistics
-                      </h4>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">
-                            Total Sent
-                          </span>
-                          <span className="font-semibold">
-                            {stats.totalSent}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">
-                            Total Failed
-                          </span>
-                          <span className="font-semibold text-red-600">
-                            {stats.totalFailed}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">
-                            Success Rate
-                          </span>
-                          <span className="font-semibold text-green-600">
-                            {stats.successRate}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">
-                            Daily Average
-                          </span>
-                          <span className="font-semibold">
-                            {stats.dailyAverage}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1487,7 +1532,7 @@ export default function WaEnginePage() {
                             }))
                           }
                           placeholder="e.g., Marketing Phone"
-                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2.5 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
 
@@ -1503,30 +1548,12 @@ export default function WaEnginePage() {
                               type: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2.5 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
                           <option value="primary">Primary</option>
                           <option value="marketing">Marketing</option>
                           <option value="backup">Backup</option>
                         </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Description (Optional)
-                        </label>
-                        <textarea
-                          value={newDevice.description}
-                          onChange={(e) =>
-                            setNewDevice((prev) => ({
-                              ...prev,
-                              description: e.target.value,
-                            }))
-                          }
-                          placeholder="Describe this device's purpose..."
-                          rows={3}
-                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
                       </div>
                     </div>
 
@@ -1585,7 +1612,10 @@ export default function WaEnginePage() {
 
               <div className="mt-6 space-y-3">
                 <button
-                  onClick={() => setScanGuideModal(true)}
+                  onClick={() => {
+                    setScanGuideModal(true);
+                    setQrModal({ open: false, device: null });
+                  }}
                   className="w-full py-2.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center justify-center"
                 >
                   <Eye className="w-4 h-4 mr-2" />
@@ -1593,9 +1623,15 @@ export default function WaEnginePage() {
                 </button>
                 <button
                   onClick={() => {
-                    toast.success("QR code download started");
+                    if (qrModal.device?.qrImage) {
+                      const link = document.createElement("a");
+                      link.href = `data:image/png;base64,${qrModal.device.qrImage}`;
+                      link.download = `whatsapp-qr-${qrModal.device.id}.png`;
+                      link.click();
+                      toast.success("QR code downloaded");
+                    }
                   }}
-                  className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-colors flex items-center justify-center"
+                  className="w-full py-2.5 bg-blue-500 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-colors flex items-center justify-center"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download QR Image
@@ -1668,7 +1704,7 @@ export default function WaEnginePage() {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <button
                   onClick={() => setScanGuideModal(false)}
-                  className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-colors font-medium"
+                  className="w-full py-3 bg-blue-500 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-colors font-medium"
                 >
                   Got it, thanks!
                 </button>
