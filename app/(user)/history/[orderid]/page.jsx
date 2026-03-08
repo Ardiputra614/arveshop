@@ -216,19 +216,8 @@ export default function History() {
   // Fetch initial data
   useEffect(() => {
     if (!order_id) return;
-
-    const fetchHistory = async () => {
-      try {
-        const res = await api.get(`/history/${order_id}`);
-        setHistory(res.data);
-      } catch (error) {
-        console.error("Error fetching history:", error);
-        setError("Gagal mengambil data history");
-      }
-    };
-
     fetchHistory();
-  }, [order_id]);
+  }, []);
 
   const fetchHistory = async () => {
     try {
