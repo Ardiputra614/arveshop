@@ -517,7 +517,7 @@ const GamesTopup = () => {
     return price + calculateTotalFee();
   };
 
-  const { user, loading: userLoading } = useUser();
+  const { user } = useUser();
   console.log("user:", user);
 
   const handleSubmit = async (e) => {

@@ -16,6 +16,7 @@ import {
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
+import Image from "next/image";
 
 export default function AdminTopupList() {
   const router = useRouter();
@@ -114,23 +115,6 @@ export default function AdminTopupList() {
     ) : (
       <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-medium">
         Inactive
-      </span>
-    );
-  };
-
-  const getFormatBadge = (service) => {
-    if (!service.customer_no_format) return null;
-    return (
-      <span
-        className={`px-2 py-1 rounded-full text-xs font-medium ${
-          service.customer_no_format === "satu_input"
-            ? "bg-blue-500/20 text-blue-400"
-            : "bg-purple-500/20 text-purple-400"
-        }`}
-      >
-        {service.customer_no_format === "satu_input"
-          ? "Single Input"
-          : "Dual Input"}
       </span>
     );
   };
@@ -315,7 +299,7 @@ export default function AdminTopupList() {
                 <div className="flex items-start space-x-4">
                   <div className="w-16 h-16 rounded-xl overflow-hidden  flex-shrink-0 group-hover:scale-105 transition-transform">
                     {service.logo ? (
-                      <img
+                      <Image
                         src={service.logo}
                         alt={service.name}
                         className="w-full h-full object-cover"
@@ -346,7 +330,9 @@ export default function AdminTopupList() {
                   <AlertCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                   <h3 className="text-xl  mb-2">Tidak ada layanan</h3>
                   <p className=" mb-4">
-                    Tidak ditemukan layanan dengan kata kunci "{searchTerm}"
+                    {/* Tidak ditemukan layanan dengan kata kunci "{searchTerm}" */}
+                    Tidak ditemukan layanan dengan kata kunci &quot;{searchTerm}
+                    &quot;
                   </p>
                   <button
                     onClick={() => {
@@ -397,7 +383,7 @@ export default function AdminTopupList() {
                       {/* Service Logo */}
                       <div className="w-12 h-12 rounded-lg overflow-hidden  flex-shrink-0 mr-4">
                         {service.logo ? (
-                          <img
+                          <Image
                             src={service.logo}
                             alt={service.name}
                             className="w-full h-full object-cover"

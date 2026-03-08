@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Image from "next/image";
 // Di komponen frontend
-import QRCode from "qrcode";
+// import QRCode from "qrcode";
 import {
   Activity,
   Download,
@@ -31,14 +31,13 @@ import {
   Eye,
   Plus,
   Search,
-  Filter,
-  MoreVertical,
   Settings,
-  ChevronRight,
-  Zap,
-  WifiIcon,
 } from "lucide-react";
 import io from "socket.io-client";
+
+// API Base URL
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000";
 
 export default function WaEnginePage() {
   // State management
@@ -68,7 +67,7 @@ export default function WaEnginePage() {
   const [qrModal, setQrModal] = useState({ open: false, device: null });
   const [scanGuideModal, setScanGuideModal] = useState(false);
   const [addDeviceModal, setAddDeviceModal] = useState(false);
-  const [deviceSettingsModal, setDeviceSettingsModal] = useState({
+  const [, setDeviceSettingsModal] = useState({
     open: false,
     device: null,
   });
@@ -84,11 +83,6 @@ export default function WaEnginePage() {
     name: "",
     type: "primary",
   });
-
-  // API Base URL
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-  const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000";
 
   // Socket connection
   useEffect(() => {
@@ -112,7 +106,7 @@ export default function WaEnginePage() {
       });
     });
 
-    newSocket.on("qr_generated", ({ deviceId, qrImage, message }) => {
+    newSocket.on("qr_generated", ({ deviceId, qrImage }) => {
       console.log("📱 QR RECEIVED for device:", deviceId);
       console.log("QR Image length:", qrImage?.length);
 
@@ -154,7 +148,7 @@ export default function WaEnginePage() {
       );
     });
 
-    newSocket.on("device_connected", ({ deviceId, number, message }) => {
+    newSocket.on("device_connected", ({ deviceId, number }) => {
       setDevices((prev) =>
         prev.map((device) =>
           device.id === deviceId
@@ -292,12 +286,10 @@ export default function WaEnginePage() {
     }
   };
 
-  // Fetch stats from API
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/stats`);
       const data = await response.json();
-
       if (data.success) {
         const totalSent =
           data.stats.devices?.reduce(
@@ -309,7 +301,6 @@ export default function WaEnginePage() {
             (acc, d) => acc + (d.messagesFailed || 0),
             0,
           ) || 0;
-
         setStats({
           totalDevices: data.stats.totalDevices || 0,
           activeDevices: data.stats.activeDevices || 0,
@@ -323,7 +314,7 @@ export default function WaEnginePage() {
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
-  };
+  }, []);
 
   // Calculate success rate
   const calculateSuccessRate = (sent, failed) => {
@@ -616,37 +607,37 @@ export default function WaEnginePage() {
   };
 
   // Send bulk message
-  const handleSendBulk = async (deviceId, targets, message) => {
-    if (!targets.length) return;
+  // const handleSendBulk = async (deviceId, targets, message) => {
+  //   if (!targets.length) return;
 
-    try {
-      const response = await fetch(`${API_BASE}/send-bulk`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          device_id: deviceId,
-          targets,
-          message,
-        }),
-      });
+  //   try {
+  //     const response = await fetch(`${API_BASE}/send-bulk`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         device_id: deviceId,
+  //         targets,
+  //         message,
+  //       }),
+  //     });
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      if (data.success) {
-        toast.success(`${targets.length} messages queued`);
-        addLog({
-          type: "success",
-          device: "System",
-          message: `${targets.length} bulk messages queued`,
-        });
-      }
-    } catch (error) {
-      console.error("Error sending bulk messages:", error);
-      toast.error("Failed to send bulk messages");
-    }
-  };
+  //     if (data.success) {
+  //       toast.success(`${targets.length} messages queued`);
+  //       addLog({
+  //         type: "success",
+  //         device: "System",
+  //         message: `${targets.length} bulk messages queued`,
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error sending bulk messages:", error);
+  //     toast.error("Failed to send bulk messages");
+  //   }
+  // };
 
   // Filter and sort devices
   const filteredDevices = devices
@@ -740,14 +731,14 @@ export default function WaEnginePage() {
   };
 
   // Format date
-  const formatDate = (date) => {
-    if (!date) return "";
-    return new Date(date).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+  // const formatDate = (date) => {
+  //   if (!date) return "";
+  //   return new Date(date).toLocaleDateString("id-ID", {
+  //     day: "2-digit",
+  //     month: "short",
+  //     year: "numeric",
+  //   });
+  // };
 
   // Copy to clipboard
   const copyToClipboard = (text) => {
@@ -764,7 +755,7 @@ export default function WaEnginePage() {
             className={`${showModal ? "w-72 h-72" : "w-48 h-48"} mx-auto rounded-lg border-4 border-white shadow-xl bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center`}
           >
             {device.qrImage ? (
-              <img
+              <Image
                 src={device.qrImage}
                 alt="WhatsApp QR Code"
                 className={`${showModal ? "w-72 h-72" : "w-48 h-48"} rounded-lg`}

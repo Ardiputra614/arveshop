@@ -62,8 +62,7 @@ export default function HistoryPage() {
     totalPages: 1,
   });
 
-  // Fetch transactions
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -104,7 +103,7 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     fetchTransactions();
@@ -115,6 +114,7 @@ export default function HistoryPage() {
     filters.start_date,
     filters.end_date,
     filters.search,
+    fetchTransactions,
   ]);
 
   const handleFilterChange = (key, value) => {

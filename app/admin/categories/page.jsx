@@ -143,7 +143,7 @@ export default function CategoryPage() {
 
   // Handle form input change
   const handleInputChange = (e) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
 
     if (name === "is_active") {
       // Untuk select, konversi string ke boolean

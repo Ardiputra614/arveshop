@@ -12,7 +12,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [focused, setFocused] = useState(true);
+  const [, setFocused] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const url = process.env.NEXT_PUBLIC_GOLANG_URL;

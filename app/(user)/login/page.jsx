@@ -110,11 +110,13 @@ export default function LoginPage() {
         </button>
 
         {/* Switch */}
+        {}
         <p
           className="text-center text-xs text-gray-600 mt-8"
           style={{ fontFamily: "'Courier New', monospace" }}
         >
-          Don't have an account?{" "}
+          {/* Don't have an account?{" "} */}
+          Don&apos;t have an account?{" "}
           <Link
             href="/register"
             className="text-white underline underline-offset-2 hover:no-underline transition-all"

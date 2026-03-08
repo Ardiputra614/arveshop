@@ -120,45 +120,39 @@ export default function ServicePage() {
   const [removeLogo, setRemoveLogo] = useState(false);
   const [removeIcon, setRemoveIcon] = useState(false);
 
-  // Fetch data on mount
   useEffect(() => {
     fetchServices();
     fetchCategories();
-  }, []);
+  }, [fetchServices, fetchCategories]);
 
   // Apply filters when dependencies change
   useEffect(() => {
     applyFilters();
-  }, [services, search, statusFilter, categoryFilter]);
-  console.log(categories);
+  }, [services, search, statusFilter, categoryFilter, applyFilters]);
 
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     setLoading(true);
     try {
-      // Replace with actual API call
       const response = await api.get(`${url}/api/admin/services`);
       setServices(response.data.data);
       setLoading(false);
-    } catch (error) {
-      // console.error("Error fetching services:", error);
+    } catch (_) {
       toast.error("Gagal memuat data service");
       setLoading(false);
     }
-  };
+  }, [url]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
-      // Replace with actual API call
       const response = await api.get(`${url}/api/admin/categories`);
       setCategories(response.data.data);
       setLoading(false);
-    } catch (error) {
-      // console.error("Error fetching services:", error);
+    } catch (_) {
       toast.error("Gagal memuat data categories");
       setLoading(false);
     }
-  };
+  }, [url]);
 
   const applyFilters = useCallback(() => {
     let filtered = [...services];

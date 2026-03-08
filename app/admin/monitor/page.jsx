@@ -1,7 +1,7 @@
 // app/monitor/page.jsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import {
   RefreshCw,
@@ -13,7 +13,6 @@ import {
   Eye,
   RotateCcw,
   BarChart3,
-  ListTodo,
   Hourglass,
   PlayCircle,
 } from "lucide-react";
@@ -61,8 +60,7 @@ export default function MonitorPage() {
     }
   };
 
-  // Fetch all data
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -84,15 +82,13 @@ export default function MonitorPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // isi deps sesuai yang dipakai di dalamnya
 
   // Force retry
   const handleForceRetry = async (orderId) => {
     setForcingRetry(orderId);
     try {
-      const res = await api.post(
-        `/api/admin/monitor/retry-jobs/${orderId}/force`,
-      );
+      await api.post(`/api/admin/monitor/retry-jobs/${orderId}/force`);
 
       // Refresh data
       await fetchData();
@@ -113,9 +109,7 @@ export default function MonitorPage() {
     setForcingRetry(orderId);
     try {
       // Hapus parameter ?immediate=true
-      const res = await api.post(
-        `/api/admin/monitor/retry-jobs/${orderId}/force`,
-      );
+      await api.post(`/api/admin/monitor/retry-jobs/${orderId}/force`);
 
       await fetchData();
       alert(`✅ Job ${orderId} diproses manual`);

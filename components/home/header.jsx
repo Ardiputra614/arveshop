@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, LogIn, UserPlus, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import api from "@/lib/api"; // axios instance withCredentials true
+import Image from "next/image";
 
 export default function Navbar({ user }) {
-  const url = process.env.NEXT_PUBLIC_GOLANG_URL;
   const [open, setOpen] = useState(false);
   const [dropdown, setDropdown] = useState(false);
   const pathname = usePathname();
@@ -50,7 +50,7 @@ export default function Navbar({ user }) {
         <div className="flex justify-between h-16 items-center">
           {/* LOGO */}
           <Link href="/" className="text-white font-bold">
-            <img src="/logo.png" className="w-32" alt="ARVE SHOP" />
+            <Image src="/logo.png" className="w-32" alt="ARVE SHOP" />
           </Link>
 
           {/* MENU */}

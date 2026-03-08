@@ -17,6 +17,7 @@ import { useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import Image from "next/image";
 
 export default function History() {
   const url = process.env.NEXT_PUBLIC_GOLANG_URL;
@@ -184,49 +185,49 @@ export default function History() {
       }
       return;
     }
-
     if (!expiryTime) return;
-
     const initialTimeLeft = calculateTimeLeft();
     console.log("Initial time left:", initialTimeLeft, "detik");
-
     if (initialTimeLeft <= 0) {
-      // Langsung expired, panggil backend
       handleExpireTransaction();
       return;
     }
-
     setTimeLeft(initialTimeLeft);
-
     timerRef.current = setInterval(async () => {
       const remaining = calculateTimeLeft();
-
       if (remaining <= 0) {
-        // Waktu habis, panggil backend
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
-
         await handleExpireTransaction();
       } else {
         setTimeLeft(remaining);
       }
     }, 1000);
-
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
     };
-  }, [expiryTime, status]);
+  }, [expiryTime, status, calculateTimeLeft, handleExpireTransaction]);
 
   // Fetch initial data
   useEffect(() => {
-    if (order_id) {
-      fetchHistory();
-    }
+    if (!order_id) return;
+
+    const fetchHistory = async () => {
+      try {
+        const res = await api.get(`/history/${order_id}`);
+        setHistory(res.data);
+      } catch (error) {
+        console.error("Error fetching history:", error);
+        setError("Gagal mengambil data history");
+      }
+    };
+
+    fetchHistory();
   }, [order_id]);
 
   const fetchHistory = async () => {
@@ -503,7 +504,7 @@ export default function History() {
                   QRIS
                 </h3>
                 <div className="flex flex-col items-center gap-4">
-                  <img
+                  <Image
                     src={finalData.url}
                     alt="QRIS"
                     className="w-48 h-48 bg-white p-2 rounded-lg"

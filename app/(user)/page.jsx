@@ -1,23 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import {
-  TrendingUp,
-  Trophy,
-  Gift,
-  ShoppingBag,
-  Users,
-  CheckCircle,
-  Clock,
-  Award,
-} from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Trophy, ShoppingBag } from "lucide-react";
 import Service from "../../components/home/service";
 import axios from "axios";
 
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
-  const [kategori, setKategori] = useState(null);
   const [activePromo, setActivePromo] = useState(0);
   const promoRef = useRef(null);
 
@@ -43,12 +33,7 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  // Set kategori default
-  useEffect(() => {
-    if (categories.length > 0 && kategori === null) {
-      setKategori(categories[0].id);
-    }
-  }, [categories, kategori]);
+  const [kategori, setKategori] = useState(kategoriValue);
 
   // FILTER SERVICES
   const servicesData = services.filter((service) => {

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import FormatRupiah from "../../../../components/home/FormatRupiah";
 import axios from "axios";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 // import { useUser } from "../../../hooks/useUser";
@@ -18,16 +17,6 @@ export default function AdminTopupSimple() {
   const slug = params.slug;
   const router = useRouter();
 
-  const COLORS = {
-    primary: "#1F2937",
-    secondary: "#374151",
-    accent: "#4B5563",
-    success: "#10B981",
-    warning: "#F59E0B",
-    error: "#EF4444",
-    info: "#3B82F6",
-  };
-
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [service, setService] = useState(null);
@@ -39,7 +28,7 @@ export default function AdminTopupSimple() {
   const [customerNote, setCustomerNote] = useState("");
   const [loadingOrder, setLoadingOrder] = useState(false);
   const { user, loading: userLoading } = useUser();
-  const [waPembeli, setWaPembeli] = useState("");
+  const [waPembeli] = useState("");
 
   // Fetch data
   useEffect(() => {
@@ -52,8 +41,8 @@ export default function AdminTopupSimple() {
         ]);
         setProducts(productsRes.data.data || []);
         setService(serviceRes.data.data || null);
-      } catch (err) {
-        console.error("Error fetching data:", err);
+      } catch (_) {
+        // console.error("Error fetching data:", err);
         toast.error("Gagal memuat data");
       } finally {
         setLoading(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useRef } from "react";
 
 const FormatRupiahInput = ({
   id,
@@ -13,7 +13,6 @@ const FormatRupiahInput = ({
   onBlur,
   ...props
 }) => {
-  const [displayValue, setDisplayValue] = useState("");
   const inputRef = useRef(null);
 
   // Format number to Rupiah
@@ -47,12 +46,11 @@ const FormatRupiahInput = ({
   };
 
   // Initialize display value from prop
-  useEffect(() => {
+  const displayValue = useMemo(() => {
     if (value || value === 0) {
-      setDisplayValue(formatRupiah(value));
-    } else {
-      setDisplayValue("");
+      return formatRupiah(value);
     }
+    return "";
   }, [value]);
 
   const handleChange = (e) => {

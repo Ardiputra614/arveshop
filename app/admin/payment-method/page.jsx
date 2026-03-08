@@ -9,17 +9,12 @@ import {
   UploadIcon,
   AlertCircleIcon,
   CreditCardIcon,
-  BanknoteIcon,
-  WalletIcon,
-  QrCodeIcon,
   CheckCircleIcon,
   FilterIcon,
   DollarSignIcon,
   PercentIcon,
-  EyeIcon,
-  EyeOffIcon,
 } from "lucide-react";
-import { Fragment, useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -52,8 +47,6 @@ const FormatRupiahInput = ({
   error = false,
   ...props
 }) => {
-  const [displayValue, setDisplayValue] = useState("");
-
   // Format number to Rupiah
   const formatRupiah = (number) => {
     if (!number && number !== "") return "";
@@ -84,12 +77,11 @@ const FormatRupiahInput = ({
   };
 
   // Initialize display value
-  useEffect(() => {
+  const displayValue = useMemo(() => {
     if (value || value === "" || value === 0) {
-      setDisplayValue(formatRupiah(value));
-    } else {
-      setDisplayValue("");
+      return formatRupiah(value);
     }
+    return "";
   }, [value]);
 
   const handleChange = (e) => {
@@ -203,7 +195,7 @@ export default function PaymentMethodPage() {
       const response = await api.get(`${url}/api/admin/payment-method`);
       setPaymentMethods(response.data.data);
       setLoading(false);
-    } catch (error) {
+    } catch (_) {
       // console.error("Error fetching services:", error);
       toast.error("Gagal memuat data service");
       setLoading(false);
@@ -404,22 +396,6 @@ export default function PaymentMethodPage() {
     }
   };
 
-  // Get type icon and color
-  const getTypeInfo = (type) => {
-    switch (type) {
-      case "bank_transfer":
-        return { icon: BanknoteIcon, color: "blue", label: "Bank Transfer" };
-      case "ewallet":
-        return { icon: WalletIcon, color: "green", label: "E-Wallet" };
-      case "qris":
-        return { icon: QrCodeIcon, color: "purple", label: "QRIS" };
-      case "cc":
-        return { icon: CreditCardIcon, color: "orange", label: "Credit Card" };
-      default:
-        return { icon: CreditCardIcon, color: "gray", label: "Other" };
-    }
-  };
-
   // Form validation
   const validateForm = () => {
     const errors = {};
@@ -587,24 +563,6 @@ export default function PaymentMethodPage() {
       console.error("Error deleting payment method:", error);
       toast.error("Gagal menghapus payment method");
     }
-  };
-
-  // Calculate example fee
-  const calculateExampleFee = () => {
-    const amount = 100000;
-    const percentFee = parseFloat(formData.percentase_fee) || 0;
-    const nominalFee = parseFloat(formData.nominal_fee) || 0;
-    const totalPercentFee = (amount * percentFee) / 100;
-    const totalFee = totalPercentFee + nominalFee;
-    const totalAmount = amount + totalFee;
-
-    return {
-      amount,
-      totalPercentFee,
-      nominalFee,
-      totalFee,
-      totalAmount,
-    };
   };
 
   return (

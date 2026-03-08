@@ -489,7 +489,7 @@ export default function ProfilAplikasiPage() {
                       {/* Preview Logo */}
                       {logoPreview && (
                         <div className="relative w-40 h-40 border rounded-lg p-2 bg-gray-50">
-                          <img
+                          <Image
                             src={logoPreview}
                             alt="Logo preview"
                             className="object-contain w-full h-full"
@@ -564,7 +564,7 @@ export default function ProfilAplikasiPage() {
                     <div className="flex items-center space-x-4">
                       {profile?.logo ? (
                         <div className="relative w-40 h-40 border rounded-lg p-2 bg-gray-50">
-                          <img
+                          <Image
                             src={profile.logo}
                             alt={profile.application_name}
                             className="object-contain w-full h-full"
@@ -789,8 +789,10 @@ export default function ProfilAplikasiPage() {
                     Belum ada data profil
                   </p>
                   <p className="text-yellow-700 text-sm mt-1">
-                    Klik tombol "Buat Profil" untuk memulai mengisi data profil
-                    aplikasi.
+                    {/* Klik tombol "Buat Profil" untuk memulai mengisi data profil
+                    aplikasi. */}
+                    Klik tombol &quot;Buat Profil&quot; untuk memulai mengisi
+                    data profil aplikasi.
                   </p>
                 </div>
               </div>

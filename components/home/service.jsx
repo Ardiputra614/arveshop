@@ -2,14 +2,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Search, Zap, ShoppingBag } from "lucide-react";
+import Image from "next/image";
 
-const Service = ({
-  games,
-  title = "",
-  layout = "grid",
-  columns = 4,
-  className = "",
-}) => {
+const Service = ({ games, title = "" }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("popular");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -123,7 +118,7 @@ const Service = ({
               <Link key={game.id} href={`/${game.slug}`} className="group">
                 <div className="relative overflow-hidden rounded-xl bg-black shadow-lg hover:-translate-y-1 transition-transform duration-200">
                   <div className="aspect-[3/4] overflow-hidden">
-                    <img
+                    <Image
                       src={game.logo}
                       alt={game.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

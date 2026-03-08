@@ -1,21 +1,13 @@
 "use client";
 
 import {
-  PenIcon,
-  PlusCircleIcon,
   SearchIcon,
-  Trash2Icon,
   XIcon,
   AlertCircleIcon,
   CheckCircleIcon,
   FilterIcon,
   EyeIcon,
-  RefreshCwIcon,
   DollarSignIcon,
-  CalendarIcon,
-  ZapIcon,
-  UsersIcon,
-  CreditCardIcon,
   FileTextIcon,
 } from "lucide-react";
 import { Fragment, useState, useEffect, useCallback } from "react";
@@ -186,103 +178,103 @@ export default function TransactionPage() {
   };
 
   // Render specific fields based on product type
-  const renderSpecificFields = (transaction) => {
-    if (!transaction.product_type) return null;
+  // const renderSpecificFields = (transaction) => {
+  //   if (!transaction.product_type) return null;
 
-    const type = transaction.product_type.toLowerCase();
+  //   const type = transaction.product_type.toLowerCase();
 
-    // Untuk PLN / Tagihan Listrik
-    if (
-      type.includes("pln") ||
-      type.includes("listrik") ||
-      type.includes("pasca")
-    ) {
-      return (
-        <>
-          {transaction.kwh && (
-            <div className="mt-2 text-xs bg-blue-50 p-2 rounded">
-              <span className="font-medium">KWH:</span> {transaction.kwh} kWh
-            </div>
-          )}
-          {transaction.meter_no && (
-            <div className="text-xs">
-              <span className="font-medium">No. Meter:</span>{" "}
-              {transaction.meter_no}
-            </div>
-          )}
-          {transaction.subscriber_id && (
-            <div className="text-xs">
-              <span className="font-medium">ID Pelanggan:</span>{" "}
-              {transaction.subscriber_id}
-            </div>
-          )}
-          {transaction.customer_name && (
-            <div className="text-xs">
-              <span className="font-medium">Nama Pelanggan:</span>{" "}
-              {transaction.customer_name}
-            </div>
-          )}
-        </>
-      );
-    }
+  //   // Untuk PLN / Tagihan Listrik
+  //   if (
+  //     type.includes("pln") ||
+  //     type.includes("listrik") ||
+  //     type.includes("pasca")
+  //   ) {
+  //     return (
+  //       <>
+  //         {transaction.kwh && (
+  //           <div className="mt-2 text-xs bg-blue-50 p-2 rounded">
+  //             <span className="font-medium">KWH:</span> {transaction.kwh} kWh
+  //           </div>
+  //         )}
+  //         {transaction.meter_no && (
+  //           <div className="text-xs">
+  //             <span className="font-medium">No. Meter:</span>{" "}
+  //             {transaction.meter_no}
+  //           </div>
+  //         )}
+  //         {transaction.subscriber_id && (
+  //           <div className="text-xs">
+  //             <span className="font-medium">ID Pelanggan:</span>{" "}
+  //             {transaction.subscriber_id}
+  //           </div>
+  //         )}
+  //         {transaction.customer_name && (
+  //           <div className="text-xs">
+  //             <span className="font-medium">Nama Pelanggan:</span>{" "}
+  //             {transaction.customer_name}
+  //           </div>
+  //         )}
+  //       </>
+  //     );
+  //   }
 
-    // Untuk Pulsa / Data / Voucher
-    if (
-      type.includes("pulsa") ||
-      type.includes("data") ||
-      type.includes("voucher")
-    ) {
-      return (
-        <>
-          {transaction.serial_number && (
-            <div className="mt-2 text-xs bg-green-50 p-2 rounded">
-              <span className="font-medium">SN:</span>{" "}
-              {transaction.serial_number}
-            </div>
-          )}
-          {transaction.voucher_code && (
-            <div className="text-xs">
-              <span className="font-medium">Kode Voucher:</span>{" "}
-              {transaction.voucher_code}
-            </div>
-          )}
-          {transaction.ref_id && (
-            <div className="text-xs">
-              <span className="font-medium">Ref ID:</span> {transaction.ref_id}
-            </div>
-          )}
-        </>
-      );
-    }
+  //   // Untuk Pulsa / Data / Voucher
+  //   if (
+  //     type.includes("pulsa") ||
+  //     type.includes("data") ||
+  //     type.includes("voucher")
+  //   ) {
+  //     return (
+  //       <>
+  //         {transaction.serial_number && (
+  //           <div className="mt-2 text-xs bg-green-50 p-2 rounded">
+  //             <span className="font-medium">SN:</span>{" "}
+  //             {transaction.serial_number}
+  //           </div>
+  //         )}
+  //         {transaction.voucher_code && (
+  //           <div className="text-xs">
+  //             <span className="font-medium">Kode Voucher:</span>{" "}
+  //             {transaction.voucher_code}
+  //           </div>
+  //         )}
+  //         {transaction.ref_id && (
+  //           <div className="text-xs">
+  //             <span className="font-medium">Ref ID:</span> {transaction.ref_id}
+  //           </div>
+  //         )}
+  //       </>
+  //     );
+  //   }
 
-    // Untuk BPJS / Tagihan Lainnya
-    if (type.includes("bpjs") || type.includes("tagihan")) {
-      return (
-        <>
-          {transaction.customer_name && (
-            <div className="mt-2 text-xs bg-purple-50 p-2 rounded">
-              <span className="font-medium">Nama:</span>{" "}
-              {transaction.customer_name}
-            </div>
-          )}
-          {transaction.meter_no && (
-            <div className="text-xs">
-              <span className="font-medium">No. Meter:</span>{" "}
-              {transaction.meter_no}
-            </div>
-          )}
-          {transaction.subscriber_id && (
-            <div className="text-xs">
-              <span className="font-medium">ID Pelanggan:</span>{" "}
-              {transaction.subscriber_id}
-            </div>
-          )}
-        </>
-      );
-    }
+  //   // Untuk BPJS / Tagihan Lainnya
+  //   if (type.includes("bpjs") || type.includes("tagihan")) {
+  //     return (
+  //       <>
+  //         {transaction.customer_name && (
+  //           <div className="mt-2 text-xs bg-purple-50 p-2 rounded">
+  //             <span className="font-medium">Nama:</span>{" "}
+  //             {transaction.customer_name}
+  //           </div>
+  //         )}
+  //         {transaction.meter_no && (
+  //           <div className="text-xs">
+  //             <span className="font-medium">No. Meter:</span>{" "}
+  //             {transaction.meter_no}
+  //           </div>
+  //         )}
+  //         {transaction.subscriber_id && (
+  //           <div className="text-xs">
+  //             <span className="font-medium">ID Pelanggan:</span>{" "}
+  //             {transaction.subscriber_id}
+  //           </div>
+  //         )}
+  //       </>
+  //     );
+  //   }
 
-    return null;
-  };
+  //   return null;
+  // };
 
   // Komponen Loading
   const LoadingSpinner = () => (
