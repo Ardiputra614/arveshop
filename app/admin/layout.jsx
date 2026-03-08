@@ -16,6 +16,7 @@ import {
   X,
   ChevronDown,
   WalletCards,
+  ChartBarBig,
 } from "lucide-react";
 
 export default function AdminLayout({ children }) {
@@ -84,6 +85,11 @@ export default function AdminLayout({ children }) {
       href: "/admin/topup",
       label: "Top up",
       icon: <WalletCards className="w-5 h-5" />,
+    },
+    {
+      href: "/admin/monitor",
+      label: "Monitor Digiflazz",
+      icon: <ChartBarBig className="w-5 h-5" />,
     },
   ];
 

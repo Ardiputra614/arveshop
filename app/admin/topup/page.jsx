@@ -140,7 +140,7 @@ export default function AdminTopupList() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-400">Memuat data layanan...</p>
+          <p className="">Memuat data layanan...</p>
         </div>
       </div>
     );
@@ -156,17 +156,15 @@ export default function AdminTopupList() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
                 Admin Topup Panel
               </h1>
-              <p className="text-gray-400 text-lg">
+              <p className=" text-lg">
                 Kelola dan lakukan topup untuk semua layanan dengan mudah
               </p>
             </div>
-            <div className="flex items-center space-x-2 bg-gray-800/50 rounded-lg p-1">
+            <div className="flex items-center space-x-2  rounded-lg p-1">
               <button
                 onClick={() => setViewMode("grid")}
                 className={`p-2 rounded-lg transition-all ${
-                  viewMode === "grid"
-                    ? "bg-blue-500 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-700"
+                  viewMode === "grid" ? "bg-blue-500 " : " hover: hover:"
                 }`}
               >
                 <Grid className="w-5 h-5" />
@@ -174,9 +172,7 @@ export default function AdminTopupList() {
               <button
                 onClick={() => setViewMode("list")}
                 className={`p-2 rounded-lg transition-all ${
-                  viewMode === "list"
-                    ? "bg-blue-500 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-700"
+                  viewMode === "list" ? "bg-blue-500 " : " hover: hover:"
                 }`}
               >
                 <List className="w-5 h-5" />
@@ -187,16 +183,12 @@ export default function AdminTopupList() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-blue-500/50 transition-all">
+          <div className=" backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-blue-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm mb-1">Total Layanan</p>
-                <p className="text-3xl font-bold text-white">
-                  {stats.totalServices}
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Semua layanan tersedia
-                </p>
+                <p className=" text-sm mb-1">Total Layanan</p>
+                <p className="text-3xl font-bold ">{stats.totalServices}</p>
+                <p className="text-xs  mt-2">Semua layanan tersedia</p>
               </div>
               <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center">
                 <Package className="w-7 h-7 text-blue-400" />
@@ -204,14 +196,12 @@ export default function AdminTopupList() {
             </div>
           </div>
 
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-purple-500/50 transition-all">
+          <div className=" backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-purple-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm mb-1">Kategori</p>
-                <p className="text-3xl font-bold text-white">
-                  {stats.totalCategories}
-                </p>
-                <p className="text-xs text-gray-500 mt-2">Kelompok layanan</p>
+                <p className=" text-sm mb-1">Kategori</p>
+                <p className="text-3xl font-bold ">{stats.totalCategories}</p>
+                <p className="text-xs  mt-2">Kelompok layanan</p>
               </div>
               <div className="w-14 h-14 bg-purple-500/20 rounded-2xl flex items-center justify-center">
                 <Filter className="w-7 h-7 text-purple-400" />
@@ -219,13 +209,11 @@ export default function AdminTopupList() {
             </div>
           </div>
 
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-green-500/50 transition-all">
+          <div className=" backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-green-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm mb-1">Layanan Aktif</p>
-                <p className="text-3xl font-bold text-white">
-                  {stats.activeServices}
-                </p>
+                <p className=" text-sm mb-1">Layanan Aktif</p>
+                <p className="text-3xl font-bold ">{stats.activeServices}</p>
                 <p className="text-xs text-green-400 mt-2">Siap digunakan</p>
               </div>
               <div className="w-14 h-14 bg-green-500/20 rounded-2xl flex items-center justify-center">
@@ -234,13 +222,11 @@ export default function AdminTopupList() {
             </div>
           </div>
 
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-yellow-500/50 transition-all">
+          <div className=" backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-yellow-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm mb-1">Populer</p>
-                <p className="text-3xl font-bold text-white">
-                  {stats.popularServices}
-                </p>
+                <p className=" text-sm mb-1">Populer</p>
+                <p className="text-3xl font-bold ">{stats.popularServices}</p>
                 <p className="text-xs text-yellow-400 mt-2">Sering digunakan</p>
               </div>
               <div className="w-14 h-14 bg-yellow-500/20 rounded-2xl flex items-center justify-center">
@@ -251,22 +237,22 @@ export default function AdminTopupList() {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 mb-8 border border-gray-700">
+        <div className=" backdrop-blur-sm rounded-2xl p-4 mb-8 border border-gray-700">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2  w-5 h-5" />
               <input
                 type="text"
                 placeholder="Cari layanan berdasarkan nama, deskripsi, atau slug..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3  border border-gray-600 rounded-xl  placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2  hover:"
                 >
                   ×
                 </button>
@@ -275,11 +261,11 @@ export default function AdminTopupList() {
 
             {/* Category Filter */}
             <div className="md:w-72 relative">
-              <Filter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Filter className="absolute left-4 top-1/2 transform -translate-y-1/2  w-5 h-5" />
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-12 pr-4 py-3  border border-gray-600 rounded-xl  appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Semua Kategori</option>
                 {categories.map((cat) => (
@@ -299,15 +285,10 @@ export default function AdminTopupList() {
 
           {/* Filter Results Info */}
           <div className="mt-3 flex items-center justify-between text-sm">
-            <p className="text-gray-400">
+            <p className="">
               Menampilkan{" "}
-              <span className="text-white font-semibold">
-                {filteredServices.length}
-              </span>{" "}
-              dari{" "}
-              <span className="text-white font-semibold">
-                {services.length}
-              </span>{" "}
+              <span className=" font-semibold">{filteredServices.length}</span>{" "}
+              dari <span className=" font-semibold">{services.length}</span>{" "}
               layanan
             </p>
             {searchTerm && (
@@ -328,11 +309,11 @@ export default function AdminTopupList() {
               <div
                 key={service.id}
                 onClick={() => handleTopupClick(service)}
-                className="group bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 cursor-pointer hover:bg-gray-800 transition-all border border-gray-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10"
+                className="group  backdrop-blur-sm rounded-2xl p-5 cursor-pointer  transition-all border border-gray-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10"
               >
                 {/* Header with Image */}
-                <div className="flex items-start space-x-4 mb-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-700 flex-shrink-0 group-hover:scale-105 transition-transform">
+                <div className="flex items-start space-x-4">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden  flex-shrink-0 group-hover:scale-105 transition-transform">
                     {service.logo ? (
                       <img
                         src={service.logo}
@@ -346,60 +327,25 @@ export default function AdminTopupList() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
-                        <Package className="w-8 h-8 text-gray-500" />
+                        <Package className="w-8 h-8 " />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-semibold truncate group-hover:text-blue-400 transition-colors">
+                    <h3 className=" font-semibold truncate group-hover:text-blue-400 transition-colors">
                       {service.name}
                     </h3>
-                    <p className="text-xs text-gray-400 truncate">
-                      {service.slug}
-                    </p>
                   </div>
                 </div>
-
-                {/* Description */}
-                <p className="text-sm text-gray-400 mb-4 line-clamp-2 min-h-[40px]">
-                  {service.description || "Tidak ada deskripsi"}
-                </p>
-
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {getStatusBadge(service)}
-                  {getFormatBadge(service)}
-                  {service.is_popular && (
-                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-medium">
-                      Popular
-                    </span>
-                  )}
-                </div>
-
-                {/* Category & Action */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-700">
-                  <span className="text-xs text-gray-500">
-                    {categories.find(
-                      (c) => String(c.id) === String(service.category_id),
-                    )?.name || "Unknown"}
-                  </span>
-                  <div className="flex items-center text-blue-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span>Topup</span>
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </div>
-                </div>
-
-                {/* Hover Effect Indicator */}
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-b-2xl transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
               </div>
             ))}
 
             {filteredServices.length === 0 && (
               <div className="col-span-full text-center py-16">
-                <div className="bg-gray-800/30 rounded-2xl p-8 max-w-md mx-auto">
+                <div className=" rounded-2xl p-8 max-w-md mx-auto">
                   <AlertCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                  <h3 className="text-xl text-white mb-2">Tidak ada layanan</h3>
-                  <p className="text-gray-400 mb-4">
+                  <h3 className="text-xl  mb-2">Tidak ada layanan</h3>
+                  <p className=" mb-4">
                     Tidak ditemukan layanan dengan kata kunci "{searchTerm}"
                   </p>
                   <button
@@ -407,7 +353,7 @@ export default function AdminTopupList() {
                       setSearchTerm("");
                       setSelectedCategory("all");
                     }}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    className="px-4 py-2 bg-blue-500  rounded-lg hover:bg-blue-600 transition-colors"
                   >
                     Reset Filter
                   </button>
@@ -423,23 +369,19 @@ export default function AdminTopupList() {
             {servicesByCategory.map((category) => (
               <div
                 key={category.id}
-                className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden"
+                className=" backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden"
               >
                 {/* Category Header */}
                 <div className="bg-gradient-to-r from-gray-800 to-gray-700/50 px-6 py-4 border-b border-gray-700">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-xl font-bold text-white">
-                        {category.name}
-                      </h2>
-                      <p className="text-sm text-gray-400">
+                      <h2 className="text-xl font-bold ">{category.name}</h2>
+                      <p className="text-sm ">
                         {category.services.length} layanan
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">
-                        ID: {category.id}
-                      </span>
+                      <span className="text-xs ">ID: {category.id}</span>
                     </div>
                   </div>
                 </div>
@@ -450,10 +392,10 @@ export default function AdminTopupList() {
                     <div
                       key={service.id}
                       onClick={() => handleTopupClick(service)}
-                      className="flex items-center px-6 py-4 hover:bg-gray-700/50 cursor-pointer transition-colors group"
+                      className="flex items-center px-6 py-4 hover: cursor-pointer transition-colors group"
                     >
                       {/* Service Logo */}
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-700 flex-shrink-0 mr-4">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden  flex-shrink-0 mr-4">
                         {service.logo ? (
                           <img
                             src={service.logo}
@@ -462,7 +404,7 @@ export default function AdminTopupList() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-6 h-6 text-gray-500" />
+                            <Package className="w-6 h-6 " />
                           </div>
                         )}
                       </div>
@@ -470,7 +412,7 @@ export default function AdminTopupList() {
                       {/* Service Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center mb-1">
-                          <h3 className="text-white font-semibold group-hover:text-blue-400 transition-colors">
+                          <h3 className=" font-semibold group-hover:text-blue-400 transition-colors">
                             {service.name}
                           </h3>
                           {service.is_popular && (
@@ -480,17 +422,15 @@ export default function AdminTopupList() {
                           )}
                         </div>
 
-                        <p className="text-sm text-gray-400 truncate max-w-2xl">
+                        <p className="text-sm  truncate max-w-2xl">
                           {service.description || "Tidak ada deskripsi"}
                         </p>
 
                         {/* Meta Info */}
                         <div className="flex items-center space-x-4 mt-2">
-                          <span className="text-xs text-gray-500">
-                            Slug: {service.slug}
-                          </span>
+                          <span className="text-xs ">Slug: {service.slug}</span>
                           {service.customer_no_format && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs ">
                               Format:{" "}
                               {service.customer_no_format === "satu_input"
                                 ? "Single"
@@ -505,12 +445,12 @@ export default function AdminTopupList() {
                         <div className="flex flex-col items-end space-y-1">
                           {getStatusBadge(service)}
                           {service.field1_label && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs ">
                               {service.field1_label}
                             </span>
                           )}
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                        <ChevronRight className="w-5 h-5  group-hover:text-blue-400 transition-colors" />
                       </div>
                     </div>
                   ))}
@@ -519,10 +459,10 @@ export default function AdminTopupList() {
             ))}
 
             {servicesByCategory.length === 0 && (
-              <div className="text-center py-16 bg-gray-800/30 rounded-2xl">
+              <div className="text-center py-16  rounded-2xl">
                 <AlertCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl text-white mb-2">Tidak ada layanan</h3>
-                <p className="text-gray-400">
+                <h3 className="text-xl  mb-2">Tidak ada layanan</h3>
+                <p className="">
                   Tidak ditemukan layanan dengan filter yang dipilih
                 </p>
               </div>
@@ -532,27 +472,25 @@ export default function AdminTopupList() {
 
         {/* Quick Stats Footer */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gray-800/30 rounded-xl p-3 text-center">
-            <Clock className="w-4 h-4 text-gray-500 mx-auto mb-1" />
-            <p className="text-xs text-gray-400">Last Updated</p>
-            <p className="text-sm text-white">
-              {new Date().toLocaleDateString("id-ID")}
-            </p>
+          <div className=" rounded-xl p-3 text-center">
+            <Clock className="w-4 h-4  mx-auto mb-1" />
+            <p className="text-xs ">Last Updated</p>
+            <p className="text-sm ">{new Date().toLocaleDateString("id-ID")}</p>
           </div>
-          <div className="bg-gray-800/30 rounded-xl p-3 text-center">
-            <DollarSign className="w-4 h-4 text-gray-500 mx-auto mb-1" />
-            <p className="text-xs text-gray-400">Avg. Price</p>
-            <p className="text-sm text-white">Rp 25.000 - 500.000</p>
+          <div className=" rounded-xl p-3 text-center">
+            <DollarSign className="w-4 h-4  mx-auto mb-1" />
+            <p className="text-xs ">Avg. Price</p>
+            <p className="text-sm ">Rp 25.000 - 500.000</p>
           </div>
-          <div className="bg-gray-800/30 rounded-xl p-3 text-center">
-            <Users className="w-4 h-4 text-gray-500 mx-auto mb-1" />
-            <p className="text-xs text-gray-400">Today Topup</p>
-            <p className="text-sm text-white">0</p>
+          <div className=" rounded-xl p-3 text-center">
+            <Users className="w-4 h-4  mx-auto mb-1" />
+            <p className="text-xs ">Today Topup</p>
+            <p className="text-sm ">0</p>
           </div>
-          <div className="bg-gray-800/30 rounded-xl p-3 text-center">
-            <Package className="w-4 h-4 text-gray-500 mx-auto mb-1" />
-            <p className="text-xs text-gray-400">Products Total</p>
-            <p className="text-sm text-white">-</p>
+          <div className=" rounded-xl p-3 text-center">
+            <Package className="w-4 h-4  mx-auto mb-1" />
+            <p className="text-xs ">Products Total</p>
+            <p className="text-sm ">-</p>
           </div>
         </div>
       </div>

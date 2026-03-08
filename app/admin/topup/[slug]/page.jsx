@@ -7,7 +7,8 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-
+// import { useUser } from "../../../hooks/useUser";
+import { useUser } from "@/hooks/useUser";
 // =============================================
 // MAIN COMPONENT - ADMIN TOPUP SIMPLE
 // =============================================
@@ -37,6 +38,8 @@ export default function AdminTopupSimple() {
   const [customerName, setCustomerName] = useState("");
   const [customerNote, setCustomerNote] = useState("");
   const [loadingOrder, setLoadingOrder] = useState(false);
+  const { user, loading: userLoading } = useUser();
+  const [waPembeli, setWaPembeli] = useState("");
 
   // Fetch data
   useEffect(() => {
@@ -103,25 +106,54 @@ export default function AdminTopupSimple() {
 
     try {
       const customerNo = formatCustomerNo();
+      const categoryId = service?.category?.id;
+      const categoryName = service?.category?.name;
 
       const data = {
+        // Basic Info
         id: selectedProduct.id,
         buyer_sku_code: selectedProduct.buyer_sku_code,
         product_name: selectedProduct.product_name,
         selling_price: selectedProduct.selling_price,
         purchase_price: selectedProduct.price,
-        gross_amount: selectedProduct.selling_price, // No fee for admin
+        product_type: selectedProduct.product_type || "game",
+        user_id: user?.id,
+        is_admin: false,
+
+        // Payment
+        gross_amount: selectedProduct.selling_price || 0,
         fee: 0,
-        payment_method_id: 1, // CASH
-        payment_method_name: "CASH",
+        payment_method_id: null,
+        payment_method_name: "cash",
         payment_type: "cash",
+
+        // Customer
         customer_no: customerNo,
-        customer_name: customerName,
+        wa_pembeli: waPembeli || "87864705664",
+        customer_name: isPlnProduct ? plnData?.name || "" : customerName,
         customer_note: customerNote,
+        customer_no_format: service?.customer_no_format,
+
+        // Category
+        category_id: categoryId,
+        category_name: categoryName,
+
+        // Admin (default false untuk user)
         is_admin: true,
+
+        // PLN Specific
+        ...(isPlnProduct &&
+          plnData && {
+            meter_no: plnData.meter_no,
+            subscriber_id: plnData.subscriber_id,
+            kwh: plnData.kwh,
+            pln_name: plnData.name,
+            pln_subscriber_id: plnData.subscriber_id,
+            pln_segment_power: plnData.segment_power,
+          }),
       };
 
-      await axios.post(`${url}/api/admin/create-transaction`, data);
+      await axios.post(`${url}/api/create-transaction`, data);
 
       toast.success("Topup berhasil!");
       setTimeout(() => {
@@ -138,7 +170,7 @@ export default function AdminTopupSimple() {
   if (loading) {
     return (
       <div className="min-h-screen  flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="">Loading...</div>
       </div>
     );
   }
@@ -146,7 +178,7 @@ export default function AdminTopupSimple() {
   if (!service) {
     return (
       <div className="min-h-screen  flex items-center justify-center">
-        <div className="text-white">Service tidak ditemukan</div>
+        <div className="">Service tidak ditemukan</div>
       </div>
     );
   }
@@ -155,19 +187,10 @@ export default function AdminTopupSimple() {
     <div className="min-h-screen ">
       <div className="container mx-auto px-4 max-w-7xl py-6">
         {/* Header */}
-        <div
-          className="rounded-2xl shadow-xl overflow-hidden mb-6"
-          style={{ backgroundColor: COLORS.primary }}
-        >
+        <div className="rounded-2xl shadow-xl overflow-hidden mb-6">
           <div className="p-6">
             <div className="flex items-center">
-              <button
-                onClick={() => router.back()}
-                className="mr-4 text-gray-400 hover:text-white"
-              >
-                ← Kembali
-              </button>
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold ">
                 Admin Topup: {service.name}
               </h1>
             </div>
@@ -179,22 +202,19 @@ export default function AdminTopupSimple() {
             {/* Left Column - Form Input */}
             <div className="lg:col-span-2 space-y-6">
               {/* Data Akun */}
-              <div
-                className="rounded-2xl shadow-lg p-6"
-                style={{ backgroundColor: COLORS.primary }}
-              >
-                <h2 className="text-xl font-bold text-white mb-4">
+              <div className="rounded-2xl shadow-lg p-6">
+                <h2 className="text-xl font-bold  mb-4">
                   Data {isPlnProduct ? "PLN" : "Akun"}
                 </h2>
 
                 {/* Field 1 */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium  mb-2">
                     {service.field1_label || "ID Pelanggan"} *
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="w-full px-4 py-3 rounded-lg   border border-gray-700 focus:border-blue-500 focus:outline-none"
                     placeholder={service.field1_placeholder || "Masukkan data"}
                     value={accountData.field1 || ""}
                     onChange={(e) =>
@@ -212,12 +232,12 @@ export default function AdminTopupSimple() {
                 {service.customer_no_format === "dua_input" &&
                   service.field2_label && (
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium  mb-2">
                         {service.field2_label} *
                       </label>
                       <input
                         type="text"
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 focus:outline-none"
+                        className="w-full px-4 py-3 rounded-lg   border border-gray-700 focus:border-blue-500 focus:outline-none"
                         placeholder={
                           service.field2_placeholder || "Masukkan data"
                         }
@@ -235,7 +255,7 @@ export default function AdminTopupSimple() {
                     <p className="text-green-400 text-sm font-medium">
                       Data siap:
                     </p>
-                    <p className="text-white font-mono text-sm break-all">
+                    <p className=" font-mono text-sm break-all">
                       {formatCustomerNo()}
                     </p>
                   </div>
@@ -243,21 +263,16 @@ export default function AdminTopupSimple() {
               </div>
 
               {/* Data Pelanggan */}
-              <div
-                className="rounded-2xl shadow-lg p-6"
-                style={{ backgroundColor: COLORS.primary }}
-              >
-                <h2 className="text-xl font-bold text-white mb-4">
-                  Data Pelanggan
-                </h2>
+              <div className="rounded-2xl shadow-lg p-6">
+                <h2 className="text-xl font-bold  mb-4">Data Pelanggan</h2>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium  mb-2">
                     Nama Pelanggan *
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="w-full px-4 py-3 rounded-lg   border border-gray-700 focus:border-blue-500 focus:outline-none"
                     placeholder="Masukkan nama pelanggan"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
@@ -265,11 +280,11 @@ export default function AdminTopupSimple() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium  mb-2">
                     Catatan (opsional)
                   </label>
                   <textarea
-                    className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="w-full px-4 py-3 rounded-lg   border border-gray-700 focus:border-blue-500 focus:outline-none"
                     placeholder="Tambahkan catatan jika perlu"
                     rows="3"
                     value={customerNote}
@@ -281,16 +296,11 @@ export default function AdminTopupSimple() {
 
             {/* Right Column - Produk & Checkout */}
             <div className="lg:col-span-1">
-              <div
-                className="rounded-2xl shadow-lg p-6 sticky top-6"
-                style={{ backgroundColor: COLORS.primary }}
-              >
-                <h2 className="text-xl font-bold text-white mb-4">
-                  Pilih Nominal
-                </h2>
+              <div className="rounded-2xl shadow-lg p-6 sticky top-6">
+                <h2 className="text-xl font-bold  mb-4">Pilih Nominal</h2>
 
                 {/* Daftar Produk */}
-                <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3 mb-6 max-h-96 overflow-y-auto">
                   {products.map((product) => {
                     const isActive =
                       product.buyer_product_status &&
@@ -312,7 +322,7 @@ export default function AdminTopupSimple() {
                           }
                         `}
                       >
-                        <div className="font-medium text-white mb-1">
+                        <div className="font-medium  mb-1">
                           {product.product_name}
                         </div>
                         <div className="text-lg font-bold text-green-400">
@@ -334,7 +344,7 @@ export default function AdminTopupSimple() {
                   <div className="border-t border-gray-700 pt-4 mb-4">
                     <div className="flex justify-between mb-2">
                       <span className="text-gray-400">Harga</span>
-                      <span className="text-white font-semibold">
+                      <span className=" font-semibold">
                         <FormatRupiah value={selectedProduct.selling_price} />
                       </span>
                     </div>
@@ -343,7 +353,7 @@ export default function AdminTopupSimple() {
                       <span className="text-green-400 font-semibold">Rp 0</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold mt-3 pt-3 border-t border-gray-700">
-                      <span className="text-white">Total</span>
+                      <span className="">Total</span>
                       <span className="text-green-400">
                         <FormatRupiah value={selectedProduct.selling_price} />
                       </span>
@@ -359,7 +369,7 @@ export default function AdminTopupSimple() {
                     w-full py-3 rounded-xl font-bold text-lg transition-all
                     ${
                       isFormComplete() && !loadingOrder
-                        ? "bg-gradient-to-r from-green-500 to-blue-500 text-white hover:scale-[1.02] cursor-pointer"
+                        ? "bg-blue-500  hover:scale-[1.02] cursor-pointer"
                         : "bg-gray-700 text-gray-500 cursor-not-allowed"
                     }
                   `}
