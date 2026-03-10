@@ -41,3 +41,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+node_modules/
+storage/app/wa-engine/node_modules/
+*.node
+*.so
+*.map
