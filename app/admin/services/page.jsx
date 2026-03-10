@@ -136,8 +136,8 @@ export default function ServicePage() {
       const response = await api.get(`${url}/api/admin/services`);
       setServices(response.data.data);
       setLoading(false);
-    } catch (_) {
-      toast.error("Gagal memuat data service");
+    } catch (error) {
+      toast.error("Gagal memuat data service", error);
       setLoading(false);
     }
   }, [url]);
@@ -148,7 +148,7 @@ export default function ServicePage() {
       const response = await api.get(`${url}/api/admin/categories`);
       setCategories(response.data.data);
       setLoading(false);
-    } catch (_) {
+    } catch (e) {
       toast.error("Gagal memuat data categories");
       setLoading(false);
     }

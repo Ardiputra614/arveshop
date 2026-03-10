@@ -1,7 +1,6 @@
-// app/(user)/history/[orderid]/page.jsx
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   CheckCircle,
   Copy,
@@ -32,7 +31,7 @@ export default function History() {
   const [expiryTime, setExpiryTime] = useState(null);
   const [digiflazzStatus, setDigiflazzStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
-  const [isExpiring, setIsExpiring] = useState(false); // 🔴 Cegah multiple request
+  const [isExpiring, setIsExpiring] = useState(false);
 
   // Ref untuk timer interval
   const timerRef = useRef(null);
@@ -40,8 +39,53 @@ export default function History() {
   // 🔴 WebSocket hook
   const { isConnected, orderStatus } = useWebSocket(order_id);
 
-  // 🔴 Fungsi untuk update status expired ke backend
-  const handleExpireTransaction = async () => {
+  // 🔴 Fetch history function - wrap with useCallback
+  const fetchHistory = useCallback(async () => {
+    try {
+      setLoading(true);
+      console.log("Fetching history for order:", order_id);
+      const response = await axios.get(`${url}/api/history/${order_id}`);
+      console.log("Initial fetch response:", response.data);
+
+      if (response.data?.data) {
+        const data = response.data.data;
+        setFinalData(data);
+
+        if (
+          data.payment_status === "settlement" ||
+          data.payment_status === "capture"
+        ) {
+          setStatus("success");
+        } else if (data.payment_status === "pending") {
+          setStatus("pending");
+        } else if (
+          data.payment_status === "expired" ||
+          data.payment_status === "cancel" ||
+          data.payment_status === "failure"
+        ) {
+          setStatus("failed");
+        } else {
+          setStatus(data.payment_status || "pending");
+        }
+
+        setDigiflazzStatus(data.digiflazz_status || "Pending");
+
+        if (data.midtrans_response?.expiry_time) {
+          const expiry = new Date(data.midtrans_response.expiry_time);
+          console.log("Expiry time dari initial fetch:", expiry);
+          setExpiryTime(expiry);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      toast.error("Gagal memuat data transaksi");
+    } finally {
+      setLoading(false);
+    }
+  }, [order_id, url]);
+
+  // 🔴 Fungsi untuk update status expired ke backend - wrap with useCallback
+  const handleExpireTransaction = useCallback(async () => {
     // Cegah multiple request
     if (isExpiring) return;
 
@@ -55,7 +99,7 @@ export default function History() {
 
       const response = await axios.post(
         `${url}/transaction/${order_id}/expire`,
-        {}, // body kosong
+        {},
         {
           withCredentials: true,
           headers: {
@@ -85,7 +129,16 @@ export default function History() {
     } finally {
       setIsExpiring(false);
     }
-  };
+  }, [order_id, url, isExpiring, fetchHistory]);
+
+  // 🔴 Calculate time left function - wrap with useCallback
+  const calculateTimeLeft = useCallback(() => {
+    if (!expiryTime) return null;
+    const now = new Date();
+    const diff = expiryTime - now;
+    if (diff <= 0) return 0;
+    return Math.floor(diff / 1000);
+  }, [expiryTime]);
 
   // 🔴 Log koneksi WebSocket
   useEffect(() => {
@@ -168,14 +221,6 @@ export default function History() {
     }
   }, [orderStatus, status, digiflazzStatus]);
 
-  const calculateTimeLeft = () => {
-    if (!expiryTime) return null;
-    const now = new Date();
-    const diff = expiryTime - now;
-    if (diff <= 0) return 0;
-    return Math.floor(diff / 1000);
-  };
-
   // 🔴 Timer effect - update setiap detik dan panggil backend saat expired
   useEffect(() => {
     if (status !== "pending") {
@@ -186,13 +231,17 @@ export default function History() {
       return;
     }
     if (!expiryTime) return;
+
     const initialTimeLeft = calculateTimeLeft();
     console.log("Initial time left:", initialTimeLeft, "detik");
+
     if (initialTimeLeft <= 0) {
       handleExpireTransaction();
       return;
     }
+
     setTimeLeft(initialTimeLeft);
+
     timerRef.current = setInterval(async () => {
       const remaining = calculateTimeLeft();
       if (remaining <= 0) {
@@ -205,6 +254,7 @@ export default function History() {
         setTimeLeft(remaining);
       }
     }, 1000);
+
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -217,51 +267,7 @@ export default function History() {
   useEffect(() => {
     if (!order_id) return;
     fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
-    try {
-      setLoading(true);
-      console.log("Fetching history for order:", order_id);
-      const response = await axios.get(`${url}/api/history/${order_id}`);
-      console.log("Initial fetch response:", response.data);
-
-      if (response.data?.data) {
-        const data = response.data.data;
-        setFinalData(data);
-
-        if (
-          data.payment_status === "settlement" ||
-          data.payment_status === "capture"
-        ) {
-          setStatus("success");
-        } else if (data.payment_status === "pending") {
-          setStatus("pending");
-        } else if (
-          data.payment_status === "expired" ||
-          data.payment_status === "cancel" ||
-          data.payment_status === "failure"
-        ) {
-          setStatus("failed");
-        } else {
-          setStatus(data.payment_status || "pending");
-        }
-
-        setDigiflazzStatus(data.digiflazz_status || "Pending");
-
-        if (data.midtrans_response?.expiry_time) {
-          const expiry = new Date(data.midtrans_response.expiry_time);
-          console.log("Expiry time dari initial fetch:", expiry);
-          setExpiryTime(expiry);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching history:", error);
-      toast.error("Gagal memuat data transaksi");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [order_id, fetchHistory]);
 
   const formatTime = (seconds) => {
     if (seconds === null || seconds === undefined) return "--:--";

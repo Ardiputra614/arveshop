@@ -230,7 +230,7 @@ export default function WaEnginePage() {
         newSocket.disconnect();
       }
     };
-  }, []);
+  }, [addLog, fetchStats]);
 
   // Fetch devices on mount
   useEffect(() => {
@@ -242,7 +242,7 @@ export default function WaEnginePage() {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDevices, fetchStats]);
 
   // Fetch devices from API
   const fetchDevices = async () => {

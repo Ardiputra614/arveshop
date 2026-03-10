@@ -35,15 +35,70 @@ export default function AdminTopupSimple() {
     const fetchData = async () => {
       try {
         setLoading(true);
+
+        // Validasi URL
+        if (!url) {
+          throw new Error("URL API tidak dikonfigurasi");
+        }
+
         const [productsRes, serviceRes] = await Promise.all([
           axios.get(`${url}/api/products/${slug}`),
           axios.get(`${url}/api/service/${slug}`),
         ]);
+
         setProducts(productsRes.data.data || []);
         setService(serviceRes.data.data || null);
-      } catch (_) {
-        // console.error("Error fetching data:", err);
-        toast.error("Gagal memuat data");
+      } catch (error) {
+        // 1. LOG KE KONSOL (untuk development)
+        console.error("Error fetching data:", {
+          message: error.message,
+          url: `${url}/api/products/${slug}`,
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+
+        // 2. TAMPILKAN PESAN ERROR KE USER
+        let errorMessage = "Gagal memuat data";
+
+        if (error.response) {
+          // Error dari server (4xx, 5xx)
+          switch (error.response.status) {
+            case 404:
+              errorMessage = "Data tidak ditemukan";
+              break;
+            case 500:
+              errorMessage = "Server error, silahkan coba lagi";
+              break;
+            default:
+              errorMessage = error.response.data?.message || errorMessage;
+          }
+        } else if (error.request) {
+          // Network error
+          errorMessage = "Koneksi ke server gagal";
+        } else {
+          // Other errors
+          errorMessage = error.message || errorMessage;
+        }
+
+        // 3. KIRIM KE ERROR TRACKING SERVICE (opsional tapi recommended)
+        if (process.env.NODE_ENV === "production") {
+          // Contoh: send to Sentry, LogRocket, etc.
+          captureException(error, { extra: { slug, url } });
+        }
+
+        // 4. TAMPILKAN KE USER
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+
+        // 5. SET STATE KOSONG
+        setProducts([]);
+        setService(null);
       } finally {
         setLoading(false);
       }

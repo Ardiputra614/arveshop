@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef, useCallback } from "react";
 
 const FormatRupiahInput = ({
   id,
@@ -15,26 +15,26 @@ const FormatRupiahInput = ({
 }) => {
   const inputRef = useRef(null);
 
-  // Format number to Rupiah
-  const formatRupiah = (number) => {
-    if (!number) return "";
+  // Format number to Rupiah - dibungkus useCallback
+  const formatRupiah = useCallback((number) => {
+    if (!number && number !== 0) return "";
 
     // Remove non-numeric characters
     const numericValue = number.toString().replace(/\D/g, "");
 
+    if (!numericValue) return "";
+
     // Format to Rupiah
-    const formatted = new Intl.NumberFormat("id-ID", {
+    return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(numericValue);
-
-    return formatted;
-  };
+    }).format(Number(numericValue));
+  }, []);
 
   // Parse Rupiah to number
-  const parseRupiah = (formattedString) => {
+  const parseRupiah = useCallback((formattedString) => {
     if (!formattedString) return "";
 
     // Remove currency symbol, dots, and spaces
@@ -43,19 +43,18 @@ const FormatRupiahInput = ({
       .replace(/\./g, "")
       .replace(/\s/g, "")
       .trim();
-  };
+  }, []);
 
-  // Initialize display value from prop
+  // Compute display value from prop - menggunakan useMemo
   const displayValue = useMemo(() => {
     if (value || value === 0) {
       return formatRupiah(value);
     }
     return "";
-  }, [value]);
+  }, [value, formatRupiah]);
 
   const handleChange = (e) => {
     const rawValue = parseRupiah(e.target.value);
-    setDisplayValue(formatRupiah(rawValue));
 
     // Call parent onChange with numeric value
     if (onChange) {
@@ -80,10 +79,6 @@ const FormatRupiahInput = ({
   };
 
   const handleBlur = (e) => {
-    // Format on blur
-    const rawValue = parseRupiah(e.target.value);
-    setDisplayValue(formatRupiah(rawValue));
-
     if (onBlur) {
       onBlur(e);
     }
@@ -101,10 +96,6 @@ const FormatRupiahInput = ({
       38,
       39,
       40, // arrow keys
-      110,
-      190, // dot/decimal
-      188,
-      108, // comma
     ];
 
     // Allow Ctrl/Command + A, C, V, X
@@ -115,9 +106,8 @@ const FormatRupiahInput = ({
     // Allow numbers
     if (
       (e.keyCode >= 48 && e.keyCode <= 57) || // number keys
-      (e.keyCode >= 96 && e.keyCode <= 105)
+      (e.keyCode >= 96 && e.keyCode <= 105) // numpad keys
     ) {
-      // numpad keys
       return;
     }
 
@@ -137,22 +127,17 @@ const FormatRupiahInput = ({
     // Remove non-numeric characters from pasted text
     const numericText = pastedText.replace(/\D/g, "");
 
-    if (numericText) {
-      const newDisplayValue = formatRupiah(numericText);
-      setDisplayValue(newDisplayValue);
-
-      if (onChange) {
-        const event = {
-          ...e,
-          target: {
-            ...e.target,
-            id: id,
-            value: numericText,
-            name: props.name || id,
-          },
-        };
-        onChange(event);
-      }
+    if (numericText && onChange) {
+      const event = {
+        ...e,
+        target: {
+          ...e.target,
+          id: id,
+          value: numericText,
+          name: props.name || id,
+        },
+      };
+      onChange(event);
     }
   };
 

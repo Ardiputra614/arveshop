@@ -103,7 +103,7 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, router]);
 
   useEffect(() => {
     fetchTransactions();

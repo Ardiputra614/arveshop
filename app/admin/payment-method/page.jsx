@@ -14,12 +14,13 @@ import {
   DollarSignIcon,
   PercentIcon,
 } from "lucide-react";
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, useMemo, useCallback } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import api from "@/lib/api";
 import Image from "next/image";
+import axios from "axios";
 
 // Komponen FormatRupiah untuk display
 const FormatRupiah = ({ value, className = "" }) => {
@@ -47,9 +48,11 @@ const FormatRupiahInput = ({
   error = false,
   ...props
 }) => {
+  // const [displayValue, setDisplayValue] = useState("");
+
   // Format number to Rupiah
-  const formatRupiah = (number) => {
-    if (!number && number !== "") return "";
+  const formatRupiah = useCallback((number) => {
+    if (!number && number !== 0) return "";
 
     // Remove non-numeric characters
     const numericValue = number.toString().replace(/\D/g, "");
@@ -63,26 +66,22 @@ const FormatRupiahInput = ({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(Number(numericValue));
-  };
+  }, []);
 
   // Parse Rupiah to number
-  const parseRupiah = (formattedString) => {
+  const parseRupiah = useCallback((formattedString) => {
     if (!formattedString) return "";
-
     return formattedString
       .replace("Rp", "")
       .replace(/\./g, "")
       .replace(/\s/g, "")
       .trim();
-  };
+  }, []);
 
-  // Initialize display value
   const displayValue = useMemo(() => {
-    if (value || value === "" || value === 0) {
-      return formatRupiah(value);
-    }
-    return "";
-  }, [value]);
+  if (value || value === 0) return formatRupiah(value);
+  return "";
+}, [value]);
 
   const handleChange = (e) => {
     const rawValue = parseRupiah(e.target.value);
@@ -159,20 +158,6 @@ const FormatRupiahInput = ({
   );
 };
 
-// Mock data
-// const mockPaymentMethods = [
-//   {
-//     id: 1,
-//     name: "BCA Virtual Account",
-//     percentase_fee: "0.5",
-//     nominal_fee: "2500",
-//     type: "bank_transfer",
-//     logo: null,
-//     status: "on",
-//     created_at: "2024-01-15",
-//   },
-// ];
-
 export default function PaymentMethodPage() {
   // State management
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -188,20 +173,6 @@ export default function PaymentMethodPage() {
   const [modalType, setModalType] = useState(""); // "add" or "edit"
   const [selectedMethod, setSelectedMethod] = useState(null);
 
-  const fetchPaymentMethod = async () => {
-    setLoading(true);
-    try {
-      // Replace with actual API call
-      const response = await api.get(`${url}/api/admin/payment-method`);
-      setPaymentMethods(response.data.data);
-      setLoading(false);
-    } catch (_) {
-      // console.error("Error fetching services:", error);
-      toast.error("Gagal memuat data service");
-      setLoading(false);
-    }
-  };
-
   // Form states
   const [formData, setFormData] = useState({
     name: "",
@@ -214,8 +185,6 @@ export default function PaymentMethodPage() {
     logo_public_id: null,
   });
 
-  console.log(formData);
-
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -224,9 +193,22 @@ export default function PaymentMethodPage() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [removeLogo, setRemoveLogo] = useState(false);
 
+  const fetchPaymentMethod = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await api.get(`${url}/api/admin/payment-method`);
+      setPaymentMethods(response.data.data);
+    } catch (error) {
+      toast.error("Gagal memuat data payment method");
+      console.error("Error fetching payment methods:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
+
   useEffect(() => {
     fetchPaymentMethod();
-  }, []);
+  }, [fetchPaymentMethod]);
 
   // Apply filters
   useEffect(() => {
@@ -244,7 +226,9 @@ export default function PaymentMethodPage() {
 
     // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter((method) => method.is_active === statusFilter);
+      filtered = filtered.filter(
+        (method) => method.is_active === (statusFilter === "true"),
+      );
     }
 
     // Type filter
@@ -281,8 +265,8 @@ export default function PaymentMethodPage() {
     setSelectedMethod(null);
     setFormData({
       name: "",
-      percentase_fee: "",
-      nominal_fee: "",
+      percentase_fee: null,
+      nominal_fee: null,
       type: "",
       fee_type: "",
       is_active: true,
@@ -302,13 +286,12 @@ export default function PaymentMethodPage() {
     setModalType("edit");
     setSelectedMethod(method);
 
-    // Set form data from the method
     setFormData({
       name: method.name || "",
-      percentase_fee: method.percentase_fee || "",
-      nominal_fee: method.nominal_fee || "",
+      percentase_fee: method.percentase_fee || null,
+      nominal_fee: method.nominal_fee || null,
       type: method.type || "",
-      fee_type: method.fee_type || "", // TAMBAHKAN INI!
+      fee_type: method.fee_type || "",
       is_active: method.is_active || false,
       logo: method.logo || null,
       logo_public_id: method.logo_public_id || null,
@@ -316,7 +299,7 @@ export default function PaymentMethodPage() {
 
     setFormErrors({});
     setLogoFile(null);
-    setLogoPreview(method.logo || null); // Set preview jika ada logo
+    setLogoPreview(method.logo || null);
     setRemoveLogo(false);
     setIsModalOpen(true);
   };
@@ -377,7 +360,7 @@ export default function PaymentMethodPage() {
 
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
-      setRemoveLogo(false); // JANGAN set true! Ini untuk upload baru
+      setRemoveLogo(false);
 
       // Reset file input value to allow selecting same file again
       e.target.value = "";
@@ -387,7 +370,7 @@ export default function PaymentMethodPage() {
   const handleRemoveLogo = () => {
     setLogoFile(null);
     setLogoPreview(null);
-    setRemoveLogo(true); // Ini untuk menghapus logo
+    setRemoveLogo(true);
 
     // Reset file input
     const fileInput = document.getElementById("logo");
@@ -395,6 +378,20 @@ export default function PaymentMethodPage() {
       fileInput.value = "";
     }
   };
+
+  // Reset states ketika modal dibuka
+  useEffect(() => {
+    if (isModalOpen) {
+      if (modalType === "edit" && selectedMethod) {
+        setLogoPreview(selectedMethod.logo || null);
+        setRemoveLogo(false);
+      } else {
+        setLogoPreview(null);
+        setRemoveLogo(false);
+      }
+      setLogoFile(null);
+    }
+  }, [isModalOpen, modalType, selectedMethod]);
 
   // Form validation
   const validateForm = () => {
@@ -421,11 +418,6 @@ export default function PaymentMethodPage() {
 
     if (!formData.type) {
       errors.type = "Tipe payment method wajib dipilih";
-    }
-
-    // is_active selalu punya nilai (default true)
-    if (formData.is_active === undefined) {
-      errors.is_active = "Status wajib dipilih";
     }
 
     return errors;
@@ -461,19 +453,10 @@ export default function PaymentMethodPage() {
         formDataToSend.append("percentase_fee", formData.percentase_fee);
       }
 
-      // LOGIKA YANG BENAR:
-      // 1. Jika ada file baru, upload (remove_logo = false)
+      // Handle logo
       if (logoFile) {
         formDataToSend.append("logo", logoFile);
-        // Jangan append remove_logo!
-      }
-      // 2. Jika user ingin menghapus logo (tanpa upload baru)
-      else if (removeLogo && modalType === "edit") {
-        formDataToSend.append("remove_logo", "true");
-      }
-
-      // Untuk update, handle remove logo
-      if (modalType === "edit" && removeLogo) {
+      } else if (removeLogo && modalType === "edit") {
         formDataToSend.append("remove_logo", "true");
       }
 
@@ -482,13 +465,12 @@ export default function PaymentMethodPage() {
       for (let pair of formDataToSend.entries()) {
         console.log(pair[0], pair[1]);
       }
-      console.log("removelogo:", removeLogo);
 
       // CREATE PAYMENT METHOD
       if (modalType === "add") {
         const response = await api.post(
           `${url}/api/admin/payment-method`,
-          formDataToSend, // Gunakan formDataToSend, bukan formData state
+          formDataToSend,
           {
             headers: {
               "Content-Type": "multipart/form-data",
@@ -503,10 +485,9 @@ export default function PaymentMethodPage() {
 
       // UPDATE PAYMENT METHOD
       else {
-        console.log("data send", formDataToSend);
         const response = await api.put(
           `${url}/api/admin/payment-method/${selectedMethod.id}`,
-          formDataToSend, // Gunakan formDataToSend, bukan formData state
+          formDataToSend,
           {
             headers: {
               "Content-Type": "multipart/form-data",
@@ -532,20 +513,6 @@ export default function PaymentMethodPage() {
     }
   };
 
-  // Reset states ketika modal dibuka
-  useEffect(() => {
-    if (isModalOpen) {
-      if (modalType === "edit" && selectedMethod) {
-        setLogoPreview(selectedMethod.logo || null);
-        setRemoveLogo(false);
-      } else {
-        setLogoPreview(null);
-        setRemoveLogo(false);
-      }
-      setLogoFile(null);
-    }
-  }, [isModalOpen, modalType, selectedMethod]);
-
   // Handle delete
   const handleDelete = async (method) => {
     if (
@@ -555,7 +522,7 @@ export default function PaymentMethodPage() {
     }
 
     try {
-      await axios.delete(`${url}/api/admin/payment-method/${method.id}`);
+      await api.delete(`${url}/api/admin/payment-method/${method.id}`);
 
       setPaymentMethods((prev) => prev.filter((m) => m.id !== method.id));
       toast.success(`Payment method "${method.name}" berhasil dihapus`);
@@ -602,7 +569,7 @@ export default function PaymentMethodPage() {
               </div>
               <button
                 onClick={openAddModal}
-                className="inline-flex items-center justify-center px-5 py-3 bg-blue-500 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-md hover:shadow-lg"
+                className="inline-flex items-center justify-center px-5 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-md hover:shadow-lg"
               >
                 <PlusCircleIcon className="w-5 h-5 mr-2" />
                 Tambah Payment Method
@@ -749,10 +716,6 @@ export default function PaymentMethodPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredMethods.map((method, index) => {
-                      // const typeInfo = getTypeInfo(method.type);
-                      // const TypeIcon = typeInfo.icon;
-                      console.log("type", method);
-
                       return (
                         <tr
                           key={method.id}
@@ -777,7 +740,6 @@ export default function PaymentMethodPage() {
                                     />
                                   </div>
                                 ) : (
-                                  // <TypeIcon className="w-5 h-5 text-white" />
                                   <div>-</div>
                                 )}
                               </div>
@@ -789,23 +751,24 @@ export default function PaymentMethodPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-2 inline-flex text-sm text-gray-900 leading-5 font-semibold rounded-full`}
-                            >
-                              {method.type.toUpperCase()}
+                            <span className="px-2 inline-flex text-sm text-gray-900 leading-5 font-semibold rounded-full">
+                              {method.type?.toUpperCase()}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              <span className="font-semibold">
-                                {method.percentase_fee}%
-                              </span>
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              <FormatRupiah
-                                value={parseInt(method.nominal_fee)}
-                              />
-                            </div>
+                            {method.fee_type === "percentase_fee" ? (
+                              <div className="text-sm text-gray-900">
+                                <span className="font-semibold">
+                                  {method.percentase_fee}%
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-900">
+                                <FormatRupiah
+                                  value={parseInt(method.nominal_fee || 0)}
+                                />
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
@@ -978,7 +941,6 @@ export default function PaymentMethodPage() {
                               )}
                             </div>
                             <div className="flex-1">
-                              {/* Input file terpisah dari label */}
                               <input
                                 type="file"
                                 id="logo"
@@ -1007,7 +969,6 @@ export default function PaymentMethodPage() {
                                 </div>
                               </label>
 
-                              {/* Tampilkan info file jika ada */}
                               {logoFile && (
                                 <div className="mt-2 flex items-center text-sm text-green-600">
                                   <CheckCircleIcon className="w-4 h-4 mr-1" />
@@ -1048,7 +1009,7 @@ export default function PaymentMethodPage() {
                             value={formData.fee_type}
                             onChange={handleInputChange}
                             className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                              formErrors.type
+                              formErrors.fee_type
                                 ? "border-red-500"
                                 : "border-gray-300"
                             }`}
@@ -1064,49 +1025,43 @@ export default function PaymentMethodPage() {
                         {/* Fees */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {formData.fee_type === "percentase_fee" ? (
-                            <>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Percentage Fee (%) *
-                                </label>
-                                <div className="relative">
-                                  <input
-                                    type="number"
-                                    id="percentase_fee"
-                                    value={formData.percentase_fee}
-                                    onChange={handleInputChange}
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="0.00"
-                                    className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                      formErrors.percentase_fee
-                                        ? "border-red-500"
-                                        : "border-gray-300"
-                                    }`}
-                                  />
-                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <PercentIcon className="h-5 w-5 text-gray-400" />
-                                  </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Percentage Fee (%) *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  id="percentase_fee"
+                                  value={formData.percentase_fee || ""}
+                                  onChange={handleInputChange}
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0.00"
+                                  className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                    formErrors.percentase_fee
+                                      ? "border-red-500"
+                                      : "border-gray-300"
+                                  }`}
+                                />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <PercentIcon className="h-5 w-5 text-gray-400" />
                                 </div>
                               </div>
-                            </>
+                            </div>
                           ) : formData.fee_type === "nominal_fee" ? (
-                            <>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Nominal Fee *
-                                </label>
-                                <FormatRupiahInput
-                                  id="nominal_fee"
-                                  value={formData.nominal_fee}
-                                  onChange={handleInputChange}
-                                  error={!!formErrors.nominal_fee}
-                                />
-                              </div>
-                            </>
-                          ) : (
-                            <></>
-                          )}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Nominal Fee *
+                              </label>
+                              <FormatRupiahInput
+                                id="nominal_fee"
+                                value={formData.nominal_fee || ""}
+                                onChange={handleInputChange}
+                                error={!!formErrors.nominal_fee}
+                              />
+                            </div>
+                          ) : null}
                         </div>
 
                         {/* Type and Status */}
@@ -1143,14 +1098,10 @@ export default function PaymentMethodPage() {
                               id="is_active"
                               value={formData.is_active}
                               onChange={handleInputChange}
-                              className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                formErrors.is_active
-                                  ? "border-red-500"
-                                  : "border-gray-300"
-                              }`}
+                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
-                              <option value="true">ACTIVE</option>
-                              <option value="false">INACTIVE</option>
+                              <option value={true}>ACTIVE</option>
+                              <option value={false}>INACTIVE</option>
                             </select>
                           </div>
                         </div>
@@ -1231,7 +1182,7 @@ export default function PaymentMethodPage() {
                         <button
                           type="submit"
                           disabled={submitting}
-                          className="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {submitting ? (
                             <>
