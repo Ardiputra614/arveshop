@@ -290,3 +290,12 @@
 [2026-03-08T11:27:34.436Z] [device_1772838606483_168vik5tp] [WARNING] Connection closed. Reconnect: false
 [2026-03-08T14:31:53.690Z] [system] [INFO] Client disconnected: bpPFBBW8rIZD6ot2AAAa
 [2026-03-09T10:47:52.784Z] [system] [SUCCESS] Server closed
+[2026-03-18T23:24:00.789Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-03-18T23:24:58.210Z] [system] [INFO] Client connected: fsWzKXkQzZ1py8QkAAAC
+[2026-03-18T23:25:30.209Z] [device_1773876321954_vlgr6s8bc] [INFO] QR Code received, generating image...
+[2026-03-18T23:25:31.201Z] [device_1773876321954_vlgr6s8bc] [SUCCESS] QR Code generated successfully
+[2026-03-18T23:26:18.995Z] [device_1773876321954_vlgr6s8bc] [WARNING] Connection closed. Reconnect: true
+[2026-03-18T23:26:27.246Z] [device_1773876321954_vlgr6s8bc] [SUCCESS] Connected: 6287864705664
+[2026-03-18T23:26:58.119Z] [device_1773876321954_vlgr6s8bc] [INFO] Sending to 87864705664...
+[2026-03-18T23:27:02.270Z] [device_1773876321954_vlgr6s8bc] [SUCCESS] Message sent to 87864705664
+[2026-03-18T23:27:28.220Z] [device_1773876321954_vlgr6s8bc] [WARNING] Connection closed. Reconnect: false

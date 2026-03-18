@@ -7,12 +7,22 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: false,
     remotePatterns: [
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
         port: "",
         pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8080",
+      },
+      {
+        protocol: "https",
+        hostname: "api.arveshop.web.id",
       },
     ],
     dangerouslyAllowSVG: true,

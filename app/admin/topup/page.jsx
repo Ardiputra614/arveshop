@@ -130,6 +130,31 @@ export default function AdminTopupList() {
     );
   }
 
+  // ✅ Buat komponen terpisah supaya bisa pakai useState
+  const ServiceLogo = ({ service }) => {
+    const [imgSrc, setImgSrc] = useState(service.logo || null);
+
+    if (!imgSrc) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
+          <Package className="w-8 h-8" />
+        </div>
+      );
+    }
+
+    return (
+      <Image
+        src={imgSrc}
+        alt={service.name}
+        width={64}
+        height={64}
+        unoptimized
+        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+        onError={() => setImgSrc(null)}
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -137,85 +162,10 @@ export default function AdminTopupList() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
-                Admin Topup Panel
-              </h1>
+              <h1 className="text-4xl font-bold  mb-2">Admin Topup Panel</h1>
               <p className=" text-lg">
                 Kelola dan lakukan topup untuk semua layanan dengan mudah
               </p>
-            </div>
-            <div className="flex items-center space-x-2  rounded-lg p-1">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === "grid" ? "bg-blue-500 " : " hover: hover:"
-                }`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === "list" ? "bg-blue-500 " : " hover: hover:"
-                }`}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className=" backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-blue-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className=" text-sm mb-1">Total Layanan</p>
-                <p className="text-3xl font-bold ">{stats.totalServices}</p>
-                <p className="text-xs  mt-2">Semua layanan tersedia</p>
-              </div>
-              <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center">
-                <Package className="w-7 h-7 text-blue-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className=" backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-purple-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className=" text-sm mb-1">Kategori</p>
-                <p className="text-3xl font-bold ">{stats.totalCategories}</p>
-                <p className="text-xs  mt-2">Kelompok layanan</p>
-              </div>
-              <div className="w-14 h-14 bg-purple-500/20 rounded-2xl flex items-center justify-center">
-                <Filter className="w-7 h-7 text-purple-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className=" backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-green-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className=" text-sm mb-1">Layanan Aktif</p>
-                <p className="text-3xl font-bold ">{stats.activeServices}</p>
-                <p className="text-xs text-green-400 mt-2">Siap digunakan</p>
-              </div>
-              <div className="w-14 h-14 bg-green-500/20 rounded-2xl flex items-center justify-center">
-                <TrendingUp className="w-7 h-7 text-green-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className=" backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-yellow-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className=" text-sm mb-1">Populer</p>
-                <p className="text-3xl font-bold ">{stats.popularServices}</p>
-                <p className="text-xs text-yellow-400 mt-2">Sering digunakan</p>
-              </div>
-              <div className="w-14 h-14 bg-yellow-500/20 rounded-2xl flex items-center justify-center">
-                <Users className="w-7 h-7 text-yellow-400" />
-              </div>
             </div>
           </div>
         </div>
@@ -297,23 +247,8 @@ export default function AdminTopupList() {
               >
                 {/* Header with Image */}
                 <div className="flex items-start space-x-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden  flex-shrink-0 group-hover:scale-105 transition-transform">
-                    {service.logo ? (
-                      <Image
-                        src={service.logo}
-                        alt={service.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src =
-                            "https://via.placeholder.com/64?text=No+Image";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
-                        <Package className="w-8 h-8 " />
-                      </div>
-                    )}
+                  <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <ServiceLogo service={service} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className=" font-semibold truncate group-hover:text-blue-400 transition-colors">
@@ -455,30 +390,6 @@ export default function AdminTopupList() {
             )}
           </div>
         )}
-
-        {/* Quick Stats Footer */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className=" rounded-xl p-3 text-center">
-            <Clock className="w-4 h-4  mx-auto mb-1" />
-            <p className="text-xs ">Last Updated</p>
-            <p className="text-sm ">{new Date().toLocaleDateString("id-ID")}</p>
-          </div>
-          <div className=" rounded-xl p-3 text-center">
-            <DollarSign className="w-4 h-4  mx-auto mb-1" />
-            <p className="text-xs ">Avg. Price</p>
-            <p className="text-sm ">Rp 25.000 - 500.000</p>
-          </div>
-          <div className=" rounded-xl p-3 text-center">
-            <Users className="w-4 h-4  mx-auto mb-1" />
-            <p className="text-xs ">Today Topup</p>
-            <p className="text-sm ">0</p>
-          </div>
-          <div className=" rounded-xl p-3 text-center">
-            <Package className="w-4 h-4  mx-auto mb-1" />
-            <p className="text-xs ">Products Total</p>
-            <p className="text-sm ">-</p>
-          </div>
-        </div>
       </div>
     </div>
   );

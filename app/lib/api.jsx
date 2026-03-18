@@ -1,8 +1,8 @@
 import axios from "axios";
 
-const axios = axios.create({
+const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_GOLANG_URL,
   withCredentials: true, // cukup sekali di sini
 });
 
-export default axios;
+export default api;

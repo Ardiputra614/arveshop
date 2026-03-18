@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { useState } from "react";
-import api from "@/lib/api"; // axios instance withCredentials true
-import Image from "next/image";
+import api from "@/lib/api";
 
 export default function Navbar({ user }) {
+  console.log(user);
   const [open, setOpen] = useState(false);
   const [dropdown, setDropdown] = useState(false);
   const pathname = usePathname();
@@ -41,8 +41,93 @@ export default function Navbar({ user }) {
     }
   };
 
-  const dashboardPath =
-    user?.role === "superadmin" ? "/admin/dashboard" : "/riwayat";
+  const renderDropdownMenu = () => {
+    if (user?.role === "superadmin") {
+      return (
+        <>
+          <Link
+            href="/admin/dashboard"
+            className="block px-4 py-3 text-sm text-gray-300 hover:bg-gray-700"
+            onClick={() => setDropdown(false)}
+          >
+            Dashboard
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700"
+          >
+            Logout
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <Link
+          href="/history"
+          className="block px-4 py-3 text-sm text-gray-300 hover:bg-gray-700"
+          onClick={() => setDropdown(false)}
+        >
+          History
+        </Link>
+        <Link
+          href="/profil"
+          className="block px-4 py-3 text-sm text-gray-300 hover:bg-gray-700"
+          onClick={() => setDropdown(false)}
+        >
+          Profil
+        </Link>
+        <button
+          onClick={handleLogout}
+          className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700"
+        >
+          Logout
+        </button>
+      </>
+    );
+  };
+
+  const renderMobileMenu = () => {
+    if (user?.role === "superadmin") {
+      return (
+        <>
+          <Link
+            href="/admin/dashboard"
+            onClick={() => setOpen(false)}
+            className="block text-gray-300"
+          >
+            Dashboard
+          </Link>
+          <button onClick={handleLogout} className="block text-red-400">
+            Logout
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <Link
+          href="/history"
+          onClick={() => setOpen(false)}
+          className="block text-gray-300"
+        >
+          History
+        </Link>
+        <Link
+          href="/profil"
+          onClick={() => setOpen(false)}
+          className="block text-gray-300"
+        >
+          Profil
+        </Link>
+        <button onClick={handleLogout} className="block text-red-400">
+          Logout
+        </button>
+      </>
+    );
+  };
 
   return (
     <nav className="bg-[#1a191d] border-b border-gray-800 sticky top-0 z-50">
@@ -50,10 +135,10 @@ export default function Navbar({ user }) {
         <div className="flex justify-between h-16 items-center">
           {/* LOGO */}
           <Link href="/" className="text-white font-bold">
-            <Image src="/logo.png" className="w-32" alt="ARVE SHOP" />
+            Arveshop
           </Link>
 
-          {/* MENU */}
+          {/* MENU DESKTOP */}
           <div className="hidden md:flex items-center gap-8">
             <Link href="/" className={menuClass("/")}>
               Top Up
@@ -80,28 +165,7 @@ export default function Navbar({ user }) {
 
                 {dropdown && (
                   <div className="absolute right-0 mt-2 w-48 bg-[#222] border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                    <Link
-                      href={dashboardPath}
-                      className="block px-4 py-3 text-sm text-gray-300 hover:bg-gray-700"
-                      onClick={() => setDropdown(false)}
-                    >
-                      Dashboard
-                    </Link>
-
-                    <Link
-                      href="/history"
-                      className="block px-4 py-3 text-sm text-gray-300 hover:bg-gray-700"
-                      onClick={() => setDropdown(false)}
-                    >
-                      History
-                    </Link>
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700"
-                    >
-                      Logout
-                    </button>
+                    {renderDropdownMenu()}
                   </div>
                 )}
               </div>
@@ -123,90 +187,67 @@ export default function Navbar({ user }) {
             )}
           </div>
 
-          {/* MOBILE */}
+          {/* HAMBURGER MOBILE */}
           <button
             className="md:hidden text-white"
             onClick={() => setOpen(!open)}
           >
             {open ? <X size={24} /> : <Menu size={24} />}
           </button>
-          {/* MOBILE MENU */}
-          {open && (
-            <div className="md:hidden bg-[#1a191d] border-t border-gray-800">
-              <div className="px-4 py-4 space-y-4">
-                <Link
-                  href="/"
-                  onClick={() => setOpen(false)}
-                  className="block text-gray-300"
-                >
-                  Top Up
-                </Link>
+        </div>
 
-                <Link
-                  href="/cek-transaksi"
-                  onClick={() => setOpen(false)}
-                  className="block text-gray-300"
-                >
-                  Cek Transaksi
-                </Link>
+        {/* MOBILE MENU */}
+        {open && (
+          <div className="md:hidden border-t border-gray-800">
+            <div className="px-4 py-4 space-y-4">
+              <Link
+                href="/"
+                onClick={() => setOpen(false)}
+                className="block text-gray-300"
+              >
+                Top Up
+              </Link>
+              <Link
+                href="/cek-transaksi"
+                onClick={() => setOpen(false)}
+                className="block text-gray-300"
+              >
+                Cek Transaksi
+              </Link>
 
-                <div className="border-t border-gray-700 pt-4 space-y-3">
-                  {user ? (
-                    <>
-                      <div className="flex items-center gap-3 text-white">
-                        <div className="w-8 h-8 flex items-center justify-center bg-blue-600 rounded-full text-sm font-bold">
-                          {getInitial(user.name)}
-                        </div>
-                        <span>{user.name}</span>
+              <div className="border-t border-gray-700 pt-4 space-y-3">
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-3 text-white">
+                      <div className="w-8 h-8 flex items-center justify-center bg-blue-600 rounded-full text-sm font-bold">
+                        {getInitial(user.name)}
                       </div>
-
-                      <Link
-                        href={dashboardPath}
-                        onClick={() => setOpen(false)}
-                        className="block text-gray-300"
-                      >
-                        Dashboard
-                      </Link>
-
-                      <Link
-                        href="/riwayat"
-                        onClick={() => setOpen(false)}
-                        className="block text-gray-300"
-                      >
-                        History
-                      </Link>
-
-                      <button
-                        onClick={handleLogout}
-                        className="block text-red-400"
-                      >
-                        Logout
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        href="/login"
-                        onClick={() => setOpen(false)}
-                        className="block text-gray-300"
-                      >
-                        Masuk
-                      </Link>
-
-                      <Link
-                        href="/register"
-                        onClick={() => setOpen(false)}
-                        className="block text-white bg-blue-600 px-4 py-2 rounded-lg"
-                      >
-                        Daftar
-                      </Link>
-                    </>
-                  )}
-                </div>
+                      <span>{user.name}</span>
+                    </div>
+                    {renderMobileMenu()}
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setOpen(false)}
+                      className="block text-gray-300"
+                    >
+                      Masuk
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setOpen(false)}
+                      className="block text-white bg-blue-600 px-4 py-2 rounded-lg"
+                    >
+                      Daftar
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </nav>
   );

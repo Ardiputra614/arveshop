@@ -80,7 +80,8 @@ export default function RegisterPage() {
               onChange={(e) => setName(e.target.value)}
               onFocus={() => setFocused("name")}
               onBlur={() => setFocused(null)}
-              className="w-full py-3 text-sm bg-gray-500 rounded-lg text-white px-3"
+              placeholder="Masukan Nama"
+              className="w-full py-3 text-sm bg-gray-500 rounded-lg text-white px-3 placeholder:text-gray-100"
             />
           </div>
 
@@ -94,7 +95,8 @@ export default function RegisterPage() {
               value={email}
               required
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full py-3 text-sm bg-gray-500 rounded-lg text-white px-3"
+              placeholder="Masukan email"
+              className="w-full py-3 text-sm bg-gray-500 rounded-lg text-white px-3 placeholder:text-gray-100"
             />
           </div>
 
@@ -108,7 +110,8 @@ export default function RegisterPage() {
               value={password}
               required
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full py-3 text-sm bg-gray-500 rounded-lg text-white px-3"
+              placeholder="Masukan Password"
+              className="w-full py-3 text-sm bg-gray-500 rounded-lg text-white px-3 placeholder:text-gray-100"
             />
 
             {password.length > 0 && (
@@ -145,7 +148,8 @@ export default function RegisterPage() {
               value={confirm}
               required
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full py-3 text-sm bg-gray-500 rounded-lg text-white px-3"
+              placeholder="Masukan ulang password"
+              className="w-full py-3 text-sm bg-gray-500 rounded-lg text-white px-3 placeholder:text-gray-100"
             />
           </div>
 

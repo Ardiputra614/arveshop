@@ -12,59 +12,51 @@ export default function HomePage() {
   const [kategori, setKategori] = useState(null);
   const [loading, setLoading] = useState(true);
   const promoRef = useRef(null);
+  const url = process.env.NEXT_PUBLIC_GOLANG_URL;
 
   // Cache untuk menghindari fetch berulang di development
   const cache = useMemo(() => new Map(), []);
 
-  // Fetch data dengan useCallback
   const fetchData = useCallback(async () => {
-    // Cek cache dulu
     if (cache.has("categories") && cache.has("services")) {
-      console.log("Using cached data");
       setCategories(cache.get("categories"));
       setServices(cache.get("services"));
-
-      // Set kategori pertama jika belum ada
-      const cachedCategories = cache.get("categories");
-      if (cachedCategories.length > 0 && !kategori) {
-        setKategori(cachedCategories[0].id);
-      }
-
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-
       const [categoriesRes, servicesRes] = await Promise.all([
-        axios.get("http://localhost:8080/api/categories"),
-        axios.get("http://localhost:8080/api/services"),
+        axios.get(`${url}/api/categories`),
+        axios.get(`${url}/api/services`),
       ]);
 
       const categoriesData = categoriesRes.data.data || [];
       const servicesData = servicesRes.data.data || [];
 
-      // Simpan ke cache
       cache.set("categories", categoriesData);
       cache.set("services", servicesData);
 
-      console.log("Categories loaded:", categoriesData.length);
-      console.log("Services loaded:", servicesData.length);
-
       setCategories(categoriesData);
       setServices(servicesData);
-
-      // Set kategori pertama sebagai default
-      if (categoriesData.length > 0 && !kategori) {
-        setKategori(categoriesData[0].id);
-      }
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
       setLoading(false);
     }
-  }, [cache, kategori]); // Tambahkan kategori ke dependencies
+  }, [cache, url]); // ✅ hapus kategori dari sini
+
+  // ✅ Set kategori awal terpisah, hanya jalan sekali setelah categories loaded
+  useEffect(() => {
+    if (categories.length > 0 && !kategori) {
+      setKategori(categories[0].id);
+    }
+  }, [categories]); // ← hanya bergantung pada categories
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]); // ← sekarang hanya jalan sekali
 
   useEffect(() => {
     fetchData();
@@ -229,57 +221,9 @@ export default function HomePage() {
                   ? "Silahkan tambahkan kategori terlebih dahulu"
                   : "Silahkan pilih kategori lain"}
               </p>
-
-              {/* Tombol pilih kategori lain jika ada */}
-              {categories.length > 1 && (
-                <div className="mt-6 flex flex-wrap justify-center gap-2">
-                  {categories
-                    .filter((c) => c.id !== kategori)
-                    .slice(0, 3)
-                    .map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => setKategori(category.id)}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-colors"
-                      >
-                        {category.name}
-                      </button>
-                    ))}
-                </div>
-              )}
             </div>
           )}
         </div>
-
-        {/* STATS / INFO (optional) */}
-        {services.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div className="bg-[#44444E] p-4 rounded-2xl text-center">
-              <div className="text-2xl font-bold text-white mb-1">
-                {services.length}
-              </div>
-              <div className="text-sm text-gray-400">Total Layanan</div>
-            </div>
-            <div className="bg-[#44444E] p-4 rounded-2xl text-center">
-              <div className="text-2xl font-bold text-white mb-1">
-                {categories.length}
-              </div>
-              <div className="text-sm text-gray-400">Kategori</div>
-            </div>
-            <div className="bg-[#44444E] p-4 rounded-2xl text-center">
-              <div className="text-2xl font-bold text-white mb-1">
-                {services.filter((s) => s.is_active).length}
-              </div>
-              <div className="text-sm text-gray-400">Layanan Aktif</div>
-            </div>
-            <div className="bg-[#44444E] p-4 rounded-2xl text-center">
-              <div className="text-2xl font-bold text-green-400 mb-1">
-                {servicesData.length}
-              </div>
-              <div className="text-sm text-gray-400">Layanan Tersedia</div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* CSS untuk hide scrollbar */}

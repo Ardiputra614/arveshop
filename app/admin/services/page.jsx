@@ -24,57 +24,6 @@ import "react-toastify/dist/ReactToastify.css";
 import api from "@/lib/api";
 import Image from "next/image";
 
-// Mock data for testing
-// const mockCategories = [
-//   { id: 1, name: "Game", status: true },
-//   { id: 2, name: "Software", status: true },
-//   { id: 3, name: "Streaming", status: true },
-//   { id: 4, name: "Voucher", status: false },
-// ];
-
-// const mockServices = [
-//   {
-//     id: 1,
-//     name: "Steam Wallet",
-//     slug: "steam-wallet",
-//     category_id: 1,
-//     category: { id: 1, name: "Game" },
-//     customer_no_format: "satu_input",
-//     field1_label: "Steam ID",
-//     field1_placeholder: "Masukkan Steam ID",
-//     field2_label: "",
-//     field2_placeholder: "",
-//     description: "Top up Steam Wallet untuk pembelian game",
-//     how_to_topup: "Masukkan Steam ID dan nominal",
-//     notes: "Proses 1-5 menit",
-//     is_active: true,
-//     is_popular: true,
-//     logo: null,
-//     icon: null,
-//     created_at: "2024-01-15",
-//   },
-//   {
-//     id: 2,
-//     name: "Spotify Premium",
-//     slug: "spotify-premium",
-//     category_id: 3,
-//     category: { id: 3, name: "Streaming" },
-//     customer_no_format: "dua_input",
-//     field1_label: "Email",
-//     field1_placeholder: "Masukkan email Spotify",
-//     field2_label: "Password",
-//     field2_placeholder: "Masukkan password",
-//     description: "Spotify Premium 1 bulan",
-//     how_to_topup: "Login dengan akun Spotify",
-//     notes: "Auto-renew setiap bulan",
-//     is_active: true,
-//     is_popular: false,
-//     logo: null,
-//     icon: null,
-//     created_at: "2024-01-16",
-//   },
-// ];
-
 export default function ServicePage() {
   // State management
   const [services, setServices] = useState([]);
@@ -87,7 +36,7 @@ export default function ServicePage() {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState(""); // "add" or "edit"
+  const [modalType, setModalType] = useState("");
   const [selectedService, setSelectedService] = useState(null);
 
   // Form states
@@ -107,7 +56,7 @@ export default function ServicePage() {
     logo: null,
     logo_public_id: null,
     icon: null,
-    icon_public_Id: null,
+    icon_public_id: null,
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -120,24 +69,15 @@ export default function ServicePage() {
   const [removeLogo, setRemoveLogo] = useState(false);
   const [removeIcon, setRemoveIcon] = useState(false);
 
-  useEffect(() => {
-    fetchServices();
-    fetchCategories();
-  }, [fetchServices, fetchCategories]);
-
-  // Apply filters when dependencies change
-  useEffect(() => {
-    applyFilters();
-  }, [services, search, statusFilter, categoryFilter, applyFilters]);
-
+  // ✅ 1. Declare all callbacks first
   const fetchServices = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get(`${url}/api/admin/services`);
       setServices(response.data.data);
-      setLoading(false);
     } catch (error) {
       toast.error("Gagal memuat data service", error);
+    } finally {
       setLoading(false);
     }
   }, [url]);
@@ -147,9 +87,9 @@ export default function ServicePage() {
     try {
       const response = await api.get(`${url}/api/admin/categories`);
       setCategories(response.data.data);
-      setLoading(false);
     } catch (e) {
       toast.error("Gagal memuat data categories");
+    } finally {
       setLoading(false);
     }
   }, [url]);
@@ -157,7 +97,6 @@ export default function ServicePage() {
   const applyFilters = useCallback(() => {
     let filtered = [...services];
 
-    // Search filter
     if (search) {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(
@@ -168,13 +107,11 @@ export default function ServicePage() {
       );
     }
 
-    // Status filter
     if (statusFilter !== "all") {
       const isActive = statusFilter === "active";
       filtered = filtered.filter((service) => service.is_active === isActive);
     }
 
-    // Category filter
     if (categoryFilter !== "all") {
       filtered = filtered.filter(
         (service) => service.category_id === parseInt(categoryFilter),
@@ -184,20 +121,20 @@ export default function ServicePage() {
     setFilteredServices(filtered);
   }, [services, search, statusFilter, categoryFilter]);
 
-  console.log(categories);
-  // Search handler
-  const handleSearch = (e) => {
-    setSearch(e.target.value);
-  };
+  // ✅ 2. useEffects after callbacks
+  useEffect(() => {
+    fetchServices();
+    fetchCategories();
+  }, [fetchServices, fetchCategories]);
 
-  // Filter handlers
-  const handleStatusFilter = (e) => {
-    setStatusFilter(e.target.value);
-  };
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
-  const handleCategoryFilter = (e) => {
-    setCategoryFilter(e.target.value);
-  };
+  // Search & filter handlers
+  const handleSearch = (e) => setSearch(e.target.value);
+  const handleStatusFilter = (e) => setStatusFilter(e.target.value);
+  const handleCategoryFilter = (e) => setCategoryFilter(e.target.value);
 
   const resetFilters = () => {
     setSearch("");
@@ -223,7 +160,9 @@ export default function ServicePage() {
       is_active: true,
       is_popular: false,
       logo: null,
+      logo_public_id: null,
       icon: null,
+      icon_public_id: null,
     });
     setFormErrors({});
     setLogoPreview(null);
@@ -278,15 +217,10 @@ export default function ServicePage() {
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear error for this field
     if (formErrors[name]) {
-      setFormErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
     }
 
-    // Reset field 2 if format changes to single input
     if (name === "customer_no_format" && value === "satu_input") {
       setFormData((prev) => ({
         ...prev,
@@ -301,24 +235,17 @@ export default function ServicePage() {
     const file = files[0];
 
     if (file) {
-      // Validate file type
       if (!file.type.startsWith("image/")) {
         toast.error("File harus berupa gambar");
         return;
       }
-
-      // Validate file size (2MB max)
       if (file.size > 2 * 1024 * 1024) {
         toast.error("Ukuran file maksimal 2MB");
         return;
       }
 
-      setFormData((prev) => ({
-        ...prev,
-        [name]: file,
-      }));
+      setFormData((prev) => ({ ...prev, [name]: file }));
 
-      // Create preview
       const previewUrl = URL.createObjectURL(file);
       if (name === "logo") {
         setLogoPreview(previewUrl);
@@ -346,21 +273,12 @@ export default function ServicePage() {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.name.trim()) {
-      errors.name = "Nama service wajib diisi";
-    }
-
-    if (!formData.category_id) {
-      errors.category_id = "Kategori wajib dipilih";
-    }
-
-    if (!formData.field1_label.trim()) {
+    if (!formData.name.trim()) errors.name = "Nama service wajib diisi";
+    if (!formData.category_id) errors.category_id = "Kategori wajib dipilih";
+    if (!formData.field1_label.trim())
       errors.field1_label = "Label field 1 wajib diisi";
-    }
-
-    if (!formData.field1_placeholder.trim()) {
+    if (!formData.field1_placeholder.trim())
       errors.field1_placeholder = "Placeholder field 1 wajib diisi";
-    }
 
     return errors;
   };
@@ -372,14 +290,10 @@ export default function ServicePage() {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-
-      // Scroll to first error
       const firstError = Object.keys(errors)[0];
       const element = document.querySelector(`[name="${firstError}"]`);
-      if (element) {
+      if (element)
         element.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-
       return;
     }
 
@@ -388,7 +302,6 @@ export default function ServicePage() {
     try {
       const formDataToSend = new FormData();
 
-      // Append form data
       Object.keys(formData).forEach((key) => {
         if (key === "logo" || key === "icon") {
           if (formData[key] instanceof File) {
@@ -401,7 +314,6 @@ export default function ServicePage() {
         }
       });
 
-      // Add remove flags for edit mode
       if (modalType === "edit") {
         if (removeLogo) formDataToSend.append("remove_logo", "1");
         if (removeIcon) formDataToSend.append("remove_icon", "1");
@@ -409,22 +321,16 @@ export default function ServicePage() {
 
       let response;
       if (modalType === "add") {
-        // Create new service
         response = await api.post(`${url}/api/admin/services`, formDataToSend);
-
         const newService = response.data.data;
         setServices((prev) => [...prev, newService]);
         toast.success(`Service "${formData.name}" berhasil ditambahkan`);
       } else {
-        // Update existing service
         response = await api.patch(
           `${url}/api/admin/services/${selectedService.id}`,
           formDataToSend,
         );
-
-        // ✅ Gunakan response dari API, bukan mock data
         const updatedService = response.data.data;
-
         setServices((prev) =>
           prev.map((service) =>
             service.id === selectedService.id ? updatedService : service,
@@ -436,7 +342,6 @@ export default function ServicePage() {
       closeModal();
     } catch (error) {
       console.error("Error saving service:", error);
-
       if (error.response?.status === 422) {
         setFormErrors(error.response.data.errors || {});
         toast.error("Validasi gagal, periksa kembali form Anda");
@@ -462,8 +367,6 @@ export default function ServicePage() {
 
     try {
       await api.delete(`${url}/api/admin/services/${service.id}`);
-
-      // Mock delete
       setServices((prev) => prev.filter((s) => s.id !== service.id));
       toast.success(`Service "${service.name}" berhasil dihapus`);
     } catch (error) {

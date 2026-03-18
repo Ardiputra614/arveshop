@@ -13,22 +13,36 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ✅ function harus async
 async function getUser() {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
+  try {
+    const cookieStore = await cookies();
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_GOLANG_URL}/api/me`, {
-    headers: {
-      Cookie: cookieHeader,
-    },
-    cache: "no-store",
-  });
+    // ✅ Build cookie header dengan benar
+    const cookieHeader = cookieStore
+      .getAll()
+      .map((c) => `${c.name}=${c.value}`)
+      .join("; ");
 
-  if (!res.ok) return null;
+    // ✅ Cek token ada dulu sebelum fetch
+    const accessToken = cookieStore.get("access_token");
+    if (!accessToken) return null;
 
-  const data = await res.json();
-  return data.user;
+    const res = await fetch(`${process.env.NEXT_PUBLIC_GOLANG_URL}/api/me`, {
+      headers: {
+        Cookie: cookieHeader,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return data.user ?? null;
+  } catch (error) {
+    // ✅ Kalau fetch gagal (backend mati, network error, dll) — return null saja
+    console.error("getUser error:", error.message);
+    return null;
+  }
 }
 
 // ✅ async di depan function

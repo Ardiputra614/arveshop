@@ -15,7 +15,6 @@ import Head from "next/head";
 import { useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import Image from "next/image";
 
 export default function History() {
@@ -32,223 +31,228 @@ export default function History() {
   const [digiflazzStatus, setDigiflazzStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
   const [isExpiring, setIsExpiring] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
-  // Ref untuk timer interval
   const timerRef = useRef(null);
+  const pollingRef = useRef(null);
+  const wsRef = useRef(null);
+  const prevStatusRef = useRef("pending");
+  const prevDigiflazzRef = useRef("Pending");
 
-  // 🔴 WebSocket hook
-  const { isConnected, orderStatus } = useWebSocket(order_id);
+  // ✅ Parse status dari data backend
+  const parseStatus = useCallback((paymentStatus) => {
+    if (paymentStatus === "settlement" || paymentStatus === "capture")
+      return "success";
+    if (paymentStatus === "pending") return "pending";
+    if (["expired", "cancel", "failure", "deny"].includes(paymentStatus))
+      return "failed";
+    return paymentStatus || "pending";
+  }, []);
 
-  // 🔴 Fetch history function - wrap with useCallback
-  const fetchHistory = useCallback(async () => {
-    try {
-      setLoading(true);
-      console.log("Fetching history for order:", order_id);
-      const response = await axios.get(`${url}/api/history/${order_id}`);
-      console.log("Initial fetch response:", response.data);
+  // ✅ Update state dari data
+  const updateFromData = useCallback(
+    (data, showToast = false) => {
+      if (!data) return;
 
-      if (response.data?.data) {
-        const data = response.data.data;
-        setFinalData(data);
+      const newStatus = parseStatus(data.payment_status);
+      const newDigiflazz = data.digiflazz_status || "Pending";
 
-        if (
-          data.payment_status === "settlement" ||
-          data.payment_status === "capture"
-        ) {
-          setStatus("success");
-        } else if (data.payment_status === "pending") {
-          setStatus("pending");
-        } else if (
-          data.payment_status === "expired" ||
-          data.payment_status === "cancel" ||
-          data.payment_status === "failure"
-        ) {
-          setStatus("failed");
-        } else {
-          setStatus(data.payment_status || "pending");
-        }
-
-        setDigiflazzStatus(data.digiflazz_status || "Pending");
-
-        if (data.midtrans_response?.expiry_time) {
-          const expiry = new Date(data.midtrans_response.expiry_time);
-          console.log("Expiry time dari initial fetch:", expiry);
-          setExpiryTime(expiry);
-        }
+      // Cek perubahan status
+      if (showToast && prevStatusRef.current !== newStatus) {
+        if (newStatus === "success") toast.success("✅ Pembayaran berhasil!");
+        else if (newStatus === "failed") toast.error("❌ Pembayaran gagal");
       }
-    } catch (error) {
-      console.error("Error fetching history:", error);
-      toast.error("Gagal memuat data transaksi");
-    } finally {
+
+      if (showToast && prevDigiflazzRef.current !== newDigiflazz) {
+        if (newDigiflazz === "Sukses")
+          toast.success("✅ Produk berhasil dikirim!");
+        else if (newDigiflazz === "Gagal")
+          toast.error("❌ Pengiriman produk gagal");
+      }
+
+      prevStatusRef.current = newStatus;
+      prevDigiflazzRef.current = newDigiflazz;
+
+      setFinalData(data);
+      setStatus(newStatus);
+      setDigiflazzStatus(newDigiflazz);
+
+      if (data.midtrans_response?.expiry_time) {
+        setExpiryTime(new Date(data.midtrans_response.expiry_time));
+      }
+    },
+    [parseStatus],
+  );
+
+  // ✅ Fetch history
+  const fetchHistory = useCallback(
+    async (showToast = false) => {
+      try {
+        const response = await axios.get(`${url}/api/history/${order_id}`, {
+          withCredentials: true,
+        });
+
+        if (response.data?.data) {
+          updateFromData(response.data.data, showToast);
+        }
+      } catch (error) {
+        console.error("Error fetching history:", error);
+      }
+    },
+    [order_id, url, updateFromData],
+  );
+
+  // ✅ Initial fetch
+  useEffect(() => {
+    if (!order_id) return;
+    const init = async () => {
+      setLoading(true);
+      await fetchHistory(false);
       setLoading(false);
+    };
+    init();
+  }, [order_id, fetchHistory]);
+
+  // ✅ WebSocket — connect ke backend
+  useEffect(() => {
+    if (!order_id) return;
+
+    const wsURL = url
+      ?.replace("https://", "wss://")
+      ?.replace("http://", "ws://");
+
+    const connect = () => {
+      try {
+        const ws = new WebSocket(`${wsURL}/ws/order/${order_id}`);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          console.log("✅ WebSocket connected");
+          setIsConnected(true);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("🔥 WebSocket update:", data);
+            updateFromData(data, true);
+          } catch (e) {
+            console.error("WS parse error:", e);
+          }
+        };
+
+        ws.onclose = () => {
+          console.log("❌ WebSocket disconnected, reconnecting in 3s...");
+          setIsConnected(false);
+          // Auto reconnect setelah 3 detik
+          setTimeout(() => {
+            if (wsRef.current?.readyState !== WebSocket.OPEN) {
+              connect();
+            }
+          }, 3000);
+        };
+
+        ws.onerror = (err) => {
+          console.error("WebSocket error:", err);
+          setIsConnected(false);
+          ws.close();
+        };
+      } catch (e) {
+        console.error("WebSocket init error:", e);
+        setIsConnected(false);
+      }
+    };
+
+    connect();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.onclose = null; // prevent reconnect on unmount
+        wsRef.current.close();
+      }
+    };
+  }, [order_id, url, updateFromData]);
+
+  // ✅ Polling fallback — jalan terus tapi lebih lambat kalau WS aktif
+  useEffect(() => {
+    if (!order_id) return;
+    if (status === "success" || status === "failed") return;
+
+    // Polling lebih cepat kalau WS tidak konek
+    const interval = isConnected ? 15000 : 5000;
+
+    pollingRef.current = setInterval(async () => {
+      console.log(`🔄 Polling... (${isConnected ? "WS aktif" : "WS mati"})`);
+      await fetchHistory(true);
+    }, interval);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [order_id, status, isConnected, fetchHistory]);
+
+  // ✅ Stop polling kalau sudah success/failed
+  useEffect(() => {
+    if (status === "success" || status === "failed") {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
-  }, [order_id, url]);
+  }, [status]);
 
-  // 🔴 Fungsi untuk update status expired ke backend - wrap with useCallback
+  // ✅ Handle expire
   const handleExpireTransaction = useCallback(async () => {
-    // Cegah multiple request
     if (isExpiring) return;
-
     setIsExpiring(true);
 
     try {
-      console.log(
-        "⏰ Mengirim request expire ke backend untuk order:",
-        order_id,
-      );
-
-      const response = await axios.post(
+      await axios.post(
         `${url}/transaction/${order_id}/expire`,
         {},
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
+        { withCredentials: true },
       );
-
-      console.log("Response expire:", response.data);
-
-      // Update status lokal
-      setStatus("expired");
+      setStatus("failed");
       setTimeLeft(0);
-
       toast.info("⏰ Waktu pembayaran telah habis");
-
-      // Fetch ulang data untuk memastikan sinkron
-      await fetchHistory();
+      await fetchHistory(false);
     } catch (error) {
-      console.error("Gagal update status expired:", error);
-
-      // Fallback: tetap update UI meskipun request gagal
-      setStatus("expired");
+      console.error("Gagal update expired:", error);
+      setStatus("failed");
       setTimeLeft(0);
-
-      toast.warning("⏰ Waktu habis, tapi gagal sinkron ke server");
+      toast.warning("⏰ Waktu habis");
     } finally {
       setIsExpiring(false);
     }
   }, [order_id, url, isExpiring, fetchHistory]);
 
-  // 🔴 Calculate time left function - wrap with useCallback
+  // ✅ Countdown timer
   const calculateTimeLeft = useCallback(() => {
     if (!expiryTime) return null;
-    const now = new Date();
-    const diff = expiryTime - now;
-    if (diff <= 0) return 0;
-    return Math.floor(diff / 1000);
+    const diff = expiryTime - new Date();
+    return diff <= 0 ? 0 : Math.floor(diff / 1000);
   }, [expiryTime]);
 
-  // 🔴 Log koneksi WebSocket
   useEffect(() => {
-    console.log(
-      "WebSocket connection status:",
-      isConnected ? "✅ Live" : "❌ Offline",
-    );
-    if (isConnected) {
-      console.log("Subscribed to order:", order_id);
-    }
-  }, [isConnected, order_id]);
+    if (status !== "pending" || !expiryTime) return;
 
-  // 🔴 Update status dari WebSocket
-  useEffect(() => {
-    if (orderStatus) {
-      console.log("🔥 WebSocket update received:", orderStatus);
-      console.log("Current status before update:", status);
-
-      const backendStatus = orderStatus.payment_status;
-      let newStatus = status;
-
-      if (backendStatus === "settlement" || backendStatus === "capture") {
-        newStatus = "success";
-        toast.success("✅ Pembayaran berhasil!");
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-      } else if (backendStatus === "pending") {
-        newStatus = "pending";
-      } else if (
-        backendStatus === "expired" ||
-        backendStatus === "cancel" ||
-        backendStatus === "failure"
-      ) {
-        newStatus = "failed";
-        toast.error("❌ Pembayaran gagal");
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-      } else {
-        newStatus = backendStatus || status;
-      }
-
-      if (newStatus !== status) {
-        console.log("Status berubah:", status, "→", newStatus);
-        setStatus(newStatus);
-      }
-
-      if (
-        orderStatus.digiflazz_status &&
-        orderStatus.digiflazz_status !== digiflazzStatus
-      ) {
-        console.log(
-          "Digiflazz status berubah:",
-          digiflazzStatus,
-          "→",
-          orderStatus.digiflazz_status,
-        );
-        setDigiflazzStatus(orderStatus.digiflazz_status);
-
-        if (orderStatus.digiflazz_status === "Sukses") {
-          toast.success("✅ Produk berhasil dikirim!");
-        }
-      }
-
-      setFinalData((prev) => ({
-        ...prev,
-        ...orderStatus,
-      }));
-
-      if (orderStatus.midtrans_response?.expiry_time) {
-        const expiryFromMidtrans = new Date(
-          orderStatus.midtrans_response.expiry_time,
-        );
-        console.log("Expiry time dari Midtrans:", expiryFromMidtrans);
-        setExpiryTime(expiryFromMidtrans);
-      }
-    }
-  }, [orderStatus, status, digiflazzStatus]);
-
-  // 🔴 Timer effect - update setiap detik dan panggil backend saat expired
-  useEffect(() => {
-    if (status !== "pending") {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      return;
-    }
-    if (!expiryTime) return;
-
-    const initialTimeLeft = calculateTimeLeft();
-    console.log("Initial time left:", initialTimeLeft, "detik");
-
-    if (initialTimeLeft <= 0) {
+    const initial = calculateTimeLeft();
+    if (initial <= 0) {
       handleExpireTransaction();
       return;
     }
 
-    setTimeLeft(initialTimeLeft);
+    setTimeLeft(initial);
 
     timerRef.current = setInterval(async () => {
       const remaining = calculateTimeLeft();
       if (remaining <= 0) {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
+        clearInterval(timerRef.current);
+        timerRef.current = null;
         await handleExpireTransaction();
       } else {
         setTimeLeft(remaining);
@@ -256,30 +260,19 @@ export default function History() {
     }, 1000);
 
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [expiryTime, status, calculateTimeLeft, handleExpireTransaction]);
 
-  // Fetch initial data
-  useEffect(() => {
-    if (!order_id) return;
-    fetchHistory();
-  }, [order_id, fetchHistory]);
-
+  // Helpers
   const formatTime = (seconds) => {
     if (seconds === null || seconds === undefined) return "--:--";
-
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    }
-    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0)
+      return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   const formatRupiah = (amount) =>
@@ -339,14 +332,8 @@ export default function History() {
     failed: {
       icon: XCircle,
       color: "text-red-500",
-      label: "Pembayaran Gagal",
-      message: "Transaksi gagal",
-    },
-    expired: {
-      icon: XCircle,
-      color: "text-red-500",
-      label: "Kedaluwarsa",
-      message: "Waktu pembayaran telah habis",
+      label: "Pembayaran Gagal / Kedaluwarsa",
+      message: "Transaksi tidak berhasil",
     },
   };
 
@@ -354,7 +341,6 @@ export default function History() {
 
   const TokenDisplay = ({ serialNumber }) => {
     if (!serialNumber) return null;
-
     const isPlnToken =
       serialNumber.includes("/") && serialNumber.includes("KWH");
     const token = isPlnToken
@@ -396,23 +382,31 @@ export default function History() {
 
       <div className="min-h-screen text-white py-8">
         <div className="max-w-4xl mx-auto px-4">
-          {/* WebSocket Status */}
+          {/* Status Bar */}
           <div className="mb-4 flex items-center justify-between">
             <div className="text-sm text-gray-400">Order ID: {order_id}</div>
-            <div className="flex items-center bg-gray-800 px-3 py-1 rounded-full">
-              {isConnected ? (
-                <>
-                  <Wifi className="w-4 h-4 text-green-500 mr-2 animate-pulse" />
-                  <span className="text-xs text-green-500">Live</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-4 h-4 text-red-500 mr-2" />
-                  <span className="text-xs text-red-500">
-                    Offline - Mencoba reconnect...
-                  </span>
-                </>
+            <div className="flex items-center gap-2">
+              {/* Polling indicator */}
+              {status === "pending" && (
+                <div className="flex items-center bg-gray-800 px-3 py-1 rounded-full">
+                  <div className="animate-spin rounded-full h-3 w-3 border border-blue-400 border-t-transparent mr-2" />
+                  <span className="text-xs text-blue-400">Auto refresh</span>
+                </div>
               )}
+              {/* WS indicator */}
+              <div className="flex items-center bg-gray-800 px-3 py-1 rounded-full">
+                {isConnected ? (
+                  <>
+                    <Wifi className="w-4 h-4 text-green-500 mr-2 animate-pulse" />
+                    <span className="text-xs text-green-500">Live</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-4 h-4 text-yellow-500 mr-2" />
+                    <span className="text-xs text-yellow-500">Polling</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -430,7 +424,6 @@ export default function History() {
               </div>
             </div>
 
-            {/* Timer */}
             {status === "pending" && timeLeft !== null && (
               <div className="mt-4 text-yellow-400 flex items-center">
                 <Clock className="w-4 h-4 mr-2" />
@@ -445,16 +438,15 @@ export default function History() {
               </div>
             )}
 
-            {/* Loading indicator saat expire request */}
             {isExpiring && (
               <div className="mt-2 text-xs text-blue-400 flex items-center">
-                <div className="animate-spin rounded-full h-3 w-3 border border-blue-400 border-t-transparent mr-2"></div>
+                <div className="animate-spin rounded-full h-3 w-3 border border-blue-400 border-t-transparent mr-2" />
                 Mensinkronkan status...
               </div>
             )}
           </div>
 
-          {/* Token Section */}
+          {/* Token */}
           {finalData.serial_number && (
             <div className="bg-gray-800 rounded-xl p-6 mb-6">
               <h3 className="font-semibold mb-4 flex items-center">
@@ -465,7 +457,7 @@ export default function History() {
             </div>
           )}
 
-          {/* Bank Transfer Info */}
+          {/* Bank Transfer */}
           {finalData.payment_type === "bank_transfer" &&
             status === "pending" && (
               <div className="bg-gray-800 rounded-xl p-6 mb-6">
@@ -489,7 +481,7 @@ export default function History() {
               </div>
             )}
 
-          {/* QRIS Info */}
+          {/* QRIS */}
           {finalData.payment_type === "qris" &&
             status === "pending" &&
             finalData.url && (
@@ -502,7 +494,10 @@ export default function History() {
                   <Image
                     src={finalData.url}
                     alt="QRIS"
-                    className="w-48 h-48 bg-white p-2 rounded-lg"
+                    width={192}
+                    height={192}
+                    unoptimized
+                    className="bg-white p-2 rounded-lg"
                   />
                   <button
                     onClick={downloadQR}
@@ -520,26 +515,24 @@ export default function History() {
             <h3 className="font-semibold mb-4 pb-3 border-b border-gray-700">
               Informasi Transaksi
             </h3>
-
             <div className="space-y-3">
-              <div className="flex justify-between py-2">
-                <span className="text-gray-400">Order ID</span>
-                <span className="font-mono">{finalData.order_id}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-gray-400">Produk</span>
-                <span className="font-medium">{finalData.product_name}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-gray-400">Nomor Tujuan</span>
-                <span className="font-medium">{finalData.customer_no}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-gray-400">Metode Pembayaran</span>
-                <span className="font-medium uppercase">
-                  {finalData.payment_method_name}
-                </span>
-              </div>
+              {[
+                { label: "Order ID", value: finalData.order_id, mono: true },
+                { label: "Produk", value: finalData.product_name },
+                { label: "Nomor Tujuan", value: finalData.customer_no },
+                {
+                  label: "Metode Pembayaran",
+                  value: finalData.payment_method_name?.toUpperCase(),
+                },
+              ].map((item) => (
+                <div key={item.label} className="flex justify-between py-2">
+                  <span className="text-gray-400">{item.label}</span>
+                  <span className={item.mono ? "font-mono" : "font-medium"}>
+                    {item.value || "-"}
+                  </span>
+                </div>
+              ))}
+
               <div className="flex justify-between py-2">
                 <span className="text-gray-400">Status Pemesanan</span>
                 <span
@@ -558,6 +551,7 @@ export default function History() {
                       : digiflazzStatus || "Menunggu"}
                 </span>
               </div>
+
               <div className="flex justify-between py-2">
                 <span className="text-gray-400">Tanggal Transaksi</span>
                 <span className="font-medium">
@@ -572,8 +566,7 @@ export default function History() {
                 </span>
               </div>
 
-              {/* Tampilkan expiry time dari Midtrans */}
-              {expiryTime && (
+              {expiryTime && status === "pending" && (
                 <div className="flex justify-between py-2">
                   <span className="text-gray-400">Batas Pembayaran</span>
                   <span className="font-medium text-yellow-400">

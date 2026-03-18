@@ -12,7 +12,7 @@ import {
   Zap,
   Users,
 } from "lucide-react";
-import Image from "next/image";
+// import Image from "next/image";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -28,7 +28,7 @@ const Footer = () => {
                 <Zap className="text-white" size={20} />
               </div>
               <div>
-                <Image src="/logo.png" className="w-20" alt="ARVE SHOP" />
+                {/* <Image src="/logo.png" className="w-20" alt="ARVE SHOP" /> */}
                 <p className="text-sm text-gray-400 -mt-2">Top Up & Payment</p>
               </div>
             </div>

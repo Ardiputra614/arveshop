@@ -7,27 +7,36 @@ import api from "@/lib/api";
 
 export default function LoginPage() {
   const [focused, setFocused] = useState(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
   const url = process.env.NEXT_PUBLIC_GOLANG_URL;
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
   async function handleSubmit(e) {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
       await api.post(`${url}/api/auth/login`, { email, password });
 
-      router.push("/"); // redirect
+      // ✅ Cek apakah ada halaman yang disimpan sebelumnya
+      const redirectTo = sessionStorage.getItem("redirectAfterLogin");
+      sessionStorage.removeItem("redirectAfterLogin");
+
+      router.push(redirectTo || "/");
       router.refresh();
     } catch (error) {
-      alert(error.response?.data?.message || "Login gagal");
+      setError(error.response?.data?.message || "Login gagal");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen  flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         {/* Heading */}
         <div className="mb-10">
@@ -38,15 +47,25 @@ export default function LoginPage() {
             Sign In
           </h1>
           <p
-            className="text-gray-500 text-sm"
+            className="text-gray-100 text-sm"
             style={{ fontFamily: "'Courier New', monospace" }}
           >
             Enter your credentials to continue.
           </p>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div
+            className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            {error}
+          </div>
+        )}
+
         {/* Form */}
-        <div className="space-y-6 ">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label
               className="block text-xs mb-2 tracking-widest uppercase text-white"
@@ -61,7 +80,8 @@ export default function LoginPage() {
               onFocus={() => setFocused("email")}
               onBlur={() => setFocused(null)}
               placeholder="you@example.com"
-              className="w-full border-b py-3 text-sm bg-gray-500 rounded-lg outline-none transition-colors duration-200 text-white placeholder-gray-700"
+              required
+              className="w-full px-3 border-b py-3 text-sm bg-gray-500 rounded-lg outline-none transition-colors duration-200 text-white placeholder-gray-100"
               style={{
                 fontFamily: "'Courier New', monospace",
                 borderColor: focused === "email" ? "#fff" : "#333",
@@ -78,7 +98,8 @@ export default function LoginPage() {
                 Password
               </label>
               <button
-                className="text-xs text-white hover:text-white transition-colors duration-200"
+                type="button"
+                className="text-xs text-white hover:text-gray-300 transition-colors duration-200"
                 style={{ fontFamily: "'Courier New', monospace" }}
               >
                 Forgot?
@@ -91,31 +112,31 @@ export default function LoginPage() {
               onFocus={() => setFocused("password")}
               onBlur={() => setFocused(null)}
               placeholder="••••••••"
-              className="w-full border-b py-3 text-sm bg-gray-500 rounded-lg outline-none transition-colors duration-200 text-white placeholder-gray-700"
+              required
+              className="w-full border-b py-3 px-3 text-sm bg-gray-500 rounded-lg outline-none transition-colors duration-200 text-white placeholder-gray-100"
               style={{
                 fontFamily: "'Courier New', monospace",
                 borderColor: focused === "password" ? "#fff" : "#333",
               }}
             />
           </div>
-        </div>
 
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          className="w-full mt-10 py-4 bg-white text-black text-sm tracking-widest uppercase transition-all duration-200 hover:bg-gray-100 active:scale-95"
-          style={{ fontFamily: "'Courier New', monospace" }}
-        >
-          Sign In →
-        </button>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-10 py-4 bg-white text-black text-sm tracking-widest uppercase transition-all duration-200 hover:bg-gray-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            {loading ? "Signing In..." : "Sign In →"}
+          </button>
+        </form>
 
         {/* Switch */}
-        {}
         <p
-          className="text-center text-xs text-gray-600 mt-8"
+          className="text-center text-xs text-gray-100 mt-8"
           style={{ fontFamily: "'Courier New', monospace" }}
         >
-          {/* Don't have an account?{" "} */}
           Don&apos;t have an account?{" "}
           <Link
             href="/register"

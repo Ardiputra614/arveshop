@@ -1,7 +1,7 @@
 // app/history/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";

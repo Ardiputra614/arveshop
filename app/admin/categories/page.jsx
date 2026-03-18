@@ -16,55 +16,39 @@ import api from "@/lib/api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// URL API dengan fallback
-const API_URL = process.env.NEXT_PUBLIC_GOLANG_URL || "http://localhost:8080";
+const API_URL = process.env.NEXT_PUBLIC_GOLANG_URL;
 const CATEGORIES_API = `${API_URL}/api/admin/categories`;
 
 export default function CategoryPage() {
-  // State untuk data
   const [categories, setCategories] = useState([]);
   const [filteredCategories, setFilteredCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // State untuk modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // State untuk form - ubah is_active ke boolean
   const [formData, setFormData] = useState({
     name: "",
-    is_active: true, // boolean langsung
+    is_active: true,
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Fungsi untuk debugging
-  useEffect(() => {
-    console.log("API URL:", API_URL);
-    console.log("Categories API:", CATEGORIES_API);
-  }, []);
-
-  // Fungsi fetch data
+  // ✅ Callback dideklarasikan sebelum useEffect
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("Fetching categories from:", CATEGORIES_API);
-      const response = await axios.get(CATEGORIES_API);
-
-      console.log("API Response:", response.data);
-
-      // Pastikan data ada dan valid
+      const response = await api.get(CATEGORIES_API);
       if (response.data && response.data.data) {
         const categoriesData = response.data.data.map((category) => ({
           ...category,
-          is_active: Boolean(category.is_active), // Pastikan boolean
+          is_active: Boolean(category.is_active),
         }));
         setCategories(categoriesData);
       } else {
-        console.error("Unexpected API response format");
         setCategories([]);
       }
     } catch (error) {
@@ -76,12 +60,10 @@ export default function CategoryPage() {
     }
   }, []);
 
-  // Fetch data pada mount
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Filter data
   useEffect(() => {
     if (!categories.length) {
       setFilteredCategories([]);
@@ -90,16 +72,14 @@ export default function CategoryPage() {
 
     let filtered = [...categories];
 
-    // Filter by search
     if (search) {
       filtered = filtered.filter((category) =>
         category.name.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
-    // Filter by status
     if (statusFilter !== "all") {
-      const isActive = statusFilter === "active"; // Ubah dari "true" ke "active"
+      const isActive = statusFilter === "active";
       filtered = filtered.filter(
         (category) => Boolean(category.is_active) === isActive,
       );
@@ -108,85 +88,63 @@ export default function CategoryPage() {
     setFilteredCategories(filtered);
   }, [categories, search, statusFilter]);
 
-  // Handle search
-  const handleSearch = (e) => {
-    setSearch(e.target.value);
+  const handleSearch = (e) => setSearch(e.target.value);
+  const handleFilterChange = (e) => setStatusFilter(e.target.value);
+
+  const resetFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
   };
 
-  // Handle filter change - ubah value options
-  const handleFilterChange = (e) => {
-    setStatusFilter(e.target.value);
-  };
-
-  // Open modal untuk tambah
   const openAddModal = () => {
     setModalType("add");
-    setFormData({
-      name: "",
-      is_active: true, // boolean langsung
-    });
+    setFormData({ name: "", is_active: true });
     setFormErrors({});
     setIsModalOpen(true);
   };
 
-  // Open modal untuk edit
   const openEditModal = (category) => {
     setModalType("edit");
     setSelectedCategory(category);
     setFormData({
       name: category.name,
-      is_active: Boolean(category.is_active), // Pastikan boolean
+      is_active: Boolean(category.is_active),
     });
     setFormErrors({});
     setIsModalOpen(true);
   };
 
-  // Handle form input change
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setModalType("");
+    setSelectedCategory(null);
+    setFormErrors({});
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
     if (name === "is_active") {
-      // Untuk select, konversi string ke boolean
-      const boolValue = value === "true";
-      setFormData((prev) => ({
-        ...prev,
-        [name]: boolValue,
-      }));
+      setFormData((prev) => ({ ...prev, [name]: value === "true" }));
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
-    // Clear error for this field
     if (formErrors[name]) {
-      setFormErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  // Validate form
   const validateForm = () => {
     const errors = {};
-
     if (!formData.name.trim()) {
       errors.name = "Category name is required";
     } else if (formData.name.length < 2) {
       errors.name = "Category name must be at least 2 characters";
     }
-
-    // is_active sudah boolean, tidak perlu validasi khusus
-    if (typeof formData.is_active !== "boolean") {
-      errors.is_active = "Status must be a boolean value";
-    }
-
     return errors;
   };
 
-  // Handle form submit
   const handleSubmit = async () => {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -194,34 +152,29 @@ export default function CategoryPage() {
       return;
     }
 
+    // ✅ payload dideklarasikan di luar try/catch
+    const payload = {
+      name: formData.name.trim(),
+      is_active: formData.is_active,
+    };
+
     setSubmitting(true);
     try {
-      const payload = {
-        name: formData.name.trim(),
-        is_active: formData.is_active, // Sudah boolean
-      };
-
-      console.log("Submitting payload:", payload);
-
       if (modalType === "add") {
-        // Add new category
         const response = await api.post(CATEGORIES_API, payload);
-
         if (response.data && response.data.data) {
           const newCategory = {
             ...response.data.data,
             is_active: Boolean(response.data.data.is_active),
           };
           setCategories((prev) => [...prev, newCategory]);
-          toast.success(`Category "${formData.name}" added successfully`);
+          toast.success(`Category "${payload.name}" added successfully`);
         }
       } else {
-        // Update existing category
         const response = await api.put(
           `${CATEGORIES_API}/${selectedCategory.id}`,
           payload,
         );
-
         if (response.data && response.data.data) {
           const updatedCategory = {
             ...response.data.data,
@@ -232,18 +185,13 @@ export default function CategoryPage() {
               cat.id === selectedCategory.id ? updatedCategory : cat,
             ),
           );
-          toast.success(`Category "${formData.name}" updated successfully`);
+          toast.success(`Category "${payload.name}" updated successfully`);
         }
       }
-
-      setIsModalOpen(false);
-      setFormData({ name: "", is_active: true });
-      setFormErrors({});
+      closeModal();
     } catch (error) {
       console.error("Error saving category:", error);
-      console.error("Error details:", error.response?.data);
 
-      // Tampilkan error yang lebih spesifik
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -252,7 +200,7 @@ export default function CategoryPage() {
 
       toast.error(`Error: ${errorMessage}`);
 
-      // Untuk testing, gunakan dummy data jika API error
+      // ✅ payload accessible di sini karena dideklarasikan di luar try
       if (modalType === "add") {
         const newCategory = {
           id: Date.now(),
@@ -260,27 +208,23 @@ export default function CategoryPage() {
           created_at: new Date().toISOString(),
         };
         setCategories((prev) => [...prev, newCategory]);
-        toast.info(`Added locally: "${formData.name}"`);
+        toast.info(`Added locally: "${payload.name}"`);
       } else {
-        const updatedCategory = {
-          ...selectedCategory,
-          ...payload,
-        };
+        const updatedCategory = { ...selectedCategory, ...payload };
         setCategories((prev) =>
           prev.map((cat) =>
             cat.id === selectedCategory.id ? updatedCategory : cat,
           ),
         );
-        toast.info(`Updated locally: "${formData.name}"`);
+        toast.info(`Updated locally: "${payload.name}"`);
       }
 
-      setIsModalOpen(false);
+      closeModal();
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Handle delete
   const handleDelete = async (category) => {
     if (
       !window.confirm(`Are you sure you want to delete "${category.name}"?`)
@@ -290,25 +234,15 @@ export default function CategoryPage() {
 
     try {
       await api.delete(`${CATEGORIES_API}/${category.id}`);
-
       setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
       toast.success(`Category "${category.name}" deleted successfully`);
     } catch (error) {
       console.error("Error deleting category:", error);
-
-      // Jika API error, hapus dari state lokal
       setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
       toast.info(`Deleted locally: "${category.name}"`);
     }
   };
 
-  // Reset filters
-  const resetFilters = () => {
-    setSearch("");
-    setStatusFilter("all");
-  };
-
-  // Komponen Loading
   const LoadingSpinner = () => (
     <div className="py-20 text-center">
       <div className="inline-flex items-center justify-center">
@@ -324,7 +258,7 @@ export default function CategoryPage() {
 
       <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header Section */}
+          {/* Header */}
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -392,7 +326,7 @@ export default function CategoryPage() {
             </div>
           </div>
 
-          {/* Filter and Search Section */}
+          {/* Filter and Search */}
           <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex-1">
@@ -442,17 +376,10 @@ export default function CategoryPage() {
               <span className="font-semibold">{filteredCategories.length}</span>{" "}
               of <span className="font-semibold">{categories.length}</span>{" "}
               categories
-              {(search || statusFilter !== "all") && (
-                <span className="ml-2">
-                  (filtered by {search && `"${search}"`}{" "}
-                  {search && statusFilter !== "all" && "and "}{" "}
-                  {statusFilter !== "all" && `${statusFilter} status`})
-                </span>
-              )}
             </div>
           </div>
 
-          {/* Table Section */}
+          {/* Table */}
           <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
             {loading ? (
               <LoadingSpinner />
@@ -465,7 +392,7 @@ export default function CategoryPage() {
                   </h3>
                   <p className="text-gray-500 mb-6">
                     {search || statusFilter !== "all"
-                      ? "Try adjusting your search or filter to find what you're looking for."
+                      ? "Try adjusting your search or filter."
                       : "Get started by adding your first category."}
                   </p>
                   {!search && statusFilter === "all" && (
@@ -504,15 +431,11 @@ export default function CategoryPage() {
                         key={category.id}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {index + 1}
-                          </div>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {index + 1}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-semibold text-gray-900 uppercase">
-                            {category.name}
-                          </div>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 uppercase">
+                          {category.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -593,12 +516,9 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      {/* Modal Component */}
+      {/* Modal */}
       <Transition show={isModalOpen} as={Fragment}>
-        <Dialog
-          onClose={() => setIsModalOpen(false)}
-          className="relative text-black z-50"
-        >
+        <Dialog onClose={closeModal} className="relative text-black z-50">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -632,7 +552,7 @@ export default function CategoryPage() {
                           : "Edit Category"}
                       </Dialog.Title>
                       <button
-                        onClick={() => setIsModalOpen(false)}
+                        onClick={closeModal}
                         className="text-gray-400 hover:text-gray-500"
                       >
                         <XIcon className="w-6 h-6" />
@@ -677,7 +597,7 @@ export default function CategoryPage() {
                         </label>
                         <select
                           name="is_active"
-                          value={formData.is_active ? "true" : "false"} // Konversi boolean ke string untuk select
+                          value={formData.is_active ? "true" : "false"}
                           onChange={handleInputChange}
                           className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             formErrors.is_active
@@ -705,7 +625,7 @@ export default function CategoryPage() {
                     <div className="flex justify-end space-x-3">
                       <button
                         type="button"
-                        onClick={() => setIsModalOpen(false)}
+                        onClick={closeModal}
                         className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         Cancel

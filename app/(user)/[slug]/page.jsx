@@ -546,7 +546,7 @@ const GamesTopup = () => {
       selling_price: selectedProduct.selling_price,
       purchase_price: selectedProduct.price,
       product_type: selectedProduct.product_type || "game",
-      user_id: user?.id,
+      // user_id: user?.id,
       is_admin: false,
 
       // Payment
