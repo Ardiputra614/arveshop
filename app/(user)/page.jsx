@@ -41,7 +41,8 @@ export default function HomePage() {
       setCategories(categoriesData);
       setServices(servicesData);
     } catch (err) {
-      console.error("Error fetching data:", err);
+      // console.error("Error fetching data:", err);
+      return;
     } finally {
       setLoading(false);
     }
@@ -66,7 +67,7 @@ export default function HomePage() {
   const servicesData = useMemo(() => {
     if (!kategori || !services.length) return [];
 
-    console.log("Filtering services for kategori:", kategori);
+    // console.log("Filtering services for kategori:", kategori);
 
     return services.filter((service) => {
       return String(service.category_id) === String(kategori);
@@ -97,14 +98,6 @@ export default function HomePage() {
 
     return () => clearInterval(interval);
   }, [promos.length]);
-
-  // Logging hanya saat diperlukan (untuk development)
-  useEffect(() => {
-    if (kategori && servicesData.length > 0) {
-      console.log("Kategori dipilih:", kategori);
-      console.log("Jumlah layanan:", servicesData.length);
-    }
-  }, [kategori, servicesData]);
 
   // Loading state
   if (loading) {

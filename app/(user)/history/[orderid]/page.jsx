@@ -96,7 +96,8 @@ export default function History() {
           updateFromData(response.data.data, showToast);
         }
       } catch (error) {
-        console.error("Error fetching history:", error);
+        // toast.error("Error fetching history");
+        return;
       }
     },
     [order_id, url, updateFromData],
@@ -127,22 +128,23 @@ export default function History() {
         wsRef.current = ws;
 
         ws.onopen = () => {
-          console.log("✅ WebSocket connected");
+          // console.log("✅ WebSocket connected");
           setIsConnected(true);
         };
 
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log("🔥 WebSocket update:", data);
+            // console.log("🔥 WebSocket update:", data);
             updateFromData(data, true);
           } catch (e) {
-            console.error("WS parse error:", e);
+            // toast.error("WS parse error:", e);
+            return;
           }
         };
 
         ws.onclose = () => {
-          console.log("❌ WebSocket disconnected, reconnecting in 3s...");
+          // console.log("❌ WebSocket disconnected, reconnecting in 3s...");
           setIsConnected(false);
           // Auto reconnect setelah 3 detik
           setTimeout(() => {
@@ -153,12 +155,12 @@ export default function History() {
         };
 
         ws.onerror = (err) => {
-          console.error("WebSocket error:", err);
+          // console.error("WebSocket error:", err);
           setIsConnected(false);
           ws.close();
         };
       } catch (e) {
-        console.error("WebSocket init error:", e);
+        // console.error("WebSocket init error:", e);
         setIsConnected(false);
       }
     };
@@ -182,7 +184,7 @@ export default function History() {
     const interval = isConnected ? 15000 : 5000;
 
     pollingRef.current = setInterval(async () => {
-      console.log(`🔄 Polling... (${isConnected ? "WS aktif" : "WS mati"})`);
+      // console.log(`🔄 Polling... (${isConnected ? "WS aktif" : "WS mati"})`);
       await fetchHistory(true);
     }, interval);
 
@@ -221,7 +223,7 @@ export default function History() {
       toast.info("⏰ Waktu pembayaran telah habis");
       await fetchHistory(false);
     } catch (error) {
-      console.error("Gagal update expired:", error);
+      // console.error("Gagal update expired:", error);
       setStatus("failed");
       setTimeLeft(0);
       toast.warning("⏰ Waktu habis");

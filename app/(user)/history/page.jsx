@@ -89,10 +89,10 @@ export default function HistoryPage() {
         const summaryRes = await api.get("/api/history/summary");
         setSummary(summaryRes.data);
       } catch (summaryErr) {
-        console.log("Summary error:", summaryErr);
+        toast.error("Summary error:", summaryErr);
       }
     } catch (err) {
-      console.error("Error:", err);
+      // console.error("Error:", err);
       setError(
         err.response?.data?.error || err.message || "Gagal mengambil data",
       );

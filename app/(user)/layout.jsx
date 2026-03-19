@@ -40,7 +40,7 @@ async function getUser() {
     return data.user ?? null;
   } catch (error) {
     // ✅ Kalau fetch gagal (backend mati, network error, dll) — return null saja
-    console.error("getUser error:", error.message);
+    // console.error("getUser error:", error.message);
     return null;
   }
 }

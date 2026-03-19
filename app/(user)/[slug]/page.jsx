@@ -154,7 +154,6 @@ const GamesTopup = () => {
         setService(serviceRes.data.data || null);
         setPaymentMethods(paymentRes.data.data || []);
       } catch (err) {
-        console.error("Error fetching data:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -518,7 +517,6 @@ const GamesTopup = () => {
   };
 
   const { user } = useUser();
-  console.log("user:", user);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -588,7 +586,6 @@ const GamesTopup = () => {
       toast.success("Berhasil membuat transaksi");
       router.push(`/history/${response.data.data.transaction.order_id}`);
     } catch (error) {
-      console.error("Error:", error);
       toast.error(error.response?.data?.message || "Gagal membuat transaksi");
     } finally {
       setLoadingOrder(false);

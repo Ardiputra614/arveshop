@@ -15,6 +15,7 @@ import {
   UploadIcon,
   Loader2Icon,
   Trash2Icon,
+  RefreshCwIcon,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast, ToastContainer } from "react-toastify";
@@ -26,9 +27,9 @@ const API_URL = process.env.NEXT_PUBLIC_GOLANG_URL || "http://localhost:8080";
 const normalizeLogo = (logo) => {
   if (!logo) return "";
   if (logo.startsWith("http")) return logo;
-  if (logo.startsWith("data:")) return logo; // base64
-  if (logo.startsWith("/uploads/")) return logo; // ✅ path Next.js public — langsung pakai
-  return `${API_URL}${logo}`; // fallback untuk URL Go lama
+  if (logo.startsWith("data:")) return logo;
+  if (logo.startsWith("/uploads/")) return logo;
+  return `${API_URL}${logo}`;
 };
 
 const ProfileLogo = ({ src: initialSrc, alt }) => {
@@ -59,6 +60,7 @@ export default function ProfilAplikasiPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [syncingSaldo, setSyncingSaldo] = useState(false); // ✅ state sync saldo
   const [formData, setFormData] = useState({
     application_name: "",
     application_fee: "",
@@ -93,7 +95,6 @@ export default function ProfilAplikasiPage() {
       if (profileData) {
         const logoUrl = normalizeLogo(profileData.logo);
         const normalized = { ...profileData, logo: logoUrl };
-
         setProfile(normalized);
         setFormData({
           application_name: profileData.application_name || "",
@@ -131,15 +132,39 @@ export default function ProfilAplikasiPage() {
     fetchProfile();
   }, [fetchProfile]);
 
+  // ─── Sync saldo dari Digiflazz ─────────────────────────────────────────────
+  const handleSyncSaldo = async () => {
+    setSyncingSaldo(true);
+    try {
+      const response = await api.post("/api/admin/saldo/sync");
+      const { saldo, synced_at } = response.data;
+
+      // Update state lokal supaya tampilan langsung berubah tanpa refetch
+      setProfile((prev) => (prev ? { ...prev, saldo } : prev));
+      setFormData((prev) => ({ ...prev, saldo }));
+
+      toast.success(`Saldo berhasil disinkronkan: ${formatCurrency(saldo)}`, {
+        autoClose: 4000,
+      });
+
+      console.log("Synced at:", synced_at);
+    } catch (error) {
+      console.error("Sync saldo error:", error);
+      const msg =
+        error.response?.data?.error || "Gagal sinkronisasi saldo Digiflazz";
+      toast.error(msg);
+    } finally {
+      setSyncingSaldo(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: name === "saldo" ? parseFloat(value) || 0 : value,
     }));
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+    if (formErrors[name]) setFormErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleFileSelect = (e) => {
@@ -164,13 +189,9 @@ export default function ProfilAplikasiPage() {
 
     setSelectedFile(file);
     const reader = new FileReader();
-    // ✅ logoPreview = base64 untuk preview langsung
     reader.onloadend = () => setLogoPreview(reader.result);
     reader.readAsDataURL(file);
-
-    if (formErrors.logo) {
-      setFormErrors((prev) => ({ ...prev, logo: "" }));
-    }
+    if (formErrors.logo) setFormErrors((prev) => ({ ...prev, logo: "" }));
   };
 
   const handleUploadLogo = async () => {
@@ -178,31 +199,21 @@ export default function ProfilAplikasiPage() {
       toast.error("Pilih file terlebih dahulu");
       return;
     }
-
     setUploading(true);
     try {
       const data = new FormData();
       data.append("logo", selectedFile);
-
-      // ✅ Kirim ke Go backend yang upload ke Cloudinary
       const response = await api.post("/api/admin/upload", data);
       const logoUrl = response.data.url;
-
       if (logoUrl) {
         setFormData((prev) => ({ ...prev, logo: logoUrl }));
-        // ✅ logoPreview tetap base64
         toast.success("Logo berhasil diupload");
       }
-
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Error uploading logo:", error);
-      if (error.response?.status === 401) {
-        toast.error("Sesi habis, silakan login ulang");
-      } else {
-        toast.error(error.response?.data?.message || "Gagal mengupload logo");
-      }
+      toast.error(error.response?.data?.message || "Gagal mengupload logo");
     } finally {
       setUploading(false);
     }
@@ -219,11 +230,10 @@ export default function ProfilAplikasiPage() {
     const errors = {};
     if (!formData.application_name.trim())
       errors.application_name = "Nama aplikasi wajib diisi";
-    if (!formData.application_fee.toString().trim()) {
+    if (!formData.application_fee.toString().trim())
       errors.application_fee = "Biaya aplikasi wajib diisi";
-    } else if (isNaN(parseFloat(formData.application_fee))) {
+    else if (isNaN(parseFloat(formData.application_fee)))
       errors.application_fee = "Biaya aplikasi harus berupa angka";
-    }
     if (!formData.terms_condition.trim())
       errors.terms_condition = "Syarat & Ketentuan wajib diisi";
     if (!formData.privacy_policy.trim())
@@ -239,7 +249,6 @@ export default function ProfilAplikasiPage() {
       toast.error("Harap periksa kembali form yang wajib diisi");
       return;
     }
-
     setSaving(true);
     try {
       const payload = {
@@ -247,7 +256,6 @@ export default function ProfilAplikasiPage() {
         application_fee: formData.application_fee.toString(),
         saldo: parseFloat(formData.saldo) || 0,
       };
-
       let response;
       if (profile?.id) {
         response = await api.put(
@@ -257,17 +265,11 @@ export default function ProfilAplikasiPage() {
       } else {
         response = await api.post("/api/admin/profil-aplikasi", payload);
       }
-
       const savedData = response.data?.data || response.data;
-
-      // ✅ Normalize logo dari response sebelum disimpan ke state
       const logoUrl = normalizeLogo(savedData?.logo);
       const normalizedSaved = { ...savedData, logo: logoUrl };
-
       setProfile(normalizedSaved);
-      // ✅ Update logoPreview ke URL yang sudah dinormalize
       setLogoPreview(logoUrl);
-
       toast.success(
         profile?.id
           ? "Profil aplikasi berhasil diperbarui"
@@ -275,7 +277,6 @@ export default function ProfilAplikasiPage() {
       );
       setEditing(false);
     } catch (error) {
-      console.error("Error saving profile:", error);
       toast.error(
         error.response?.data?.message ||
           error.message ||
@@ -288,7 +289,6 @@ export default function ProfilAplikasiPage() {
 
   const handleCancel = () => {
     if (profile) {
-      // ✅ profile.logo sudah dinormalize saat fetch/save
       setFormData({
         application_name: profile.application_name || "",
         application_fee: profile.application_fee || "",
@@ -305,14 +305,13 @@ export default function ProfilAplikasiPage() {
     setFormErrors({});
   };
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat("id-ID", {
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
-  };
 
   if (loading) {
     return (
@@ -331,7 +330,7 @@ export default function ProfilAplikasiPage() {
 
       <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
+          {/* ── Header ─────────────────────────────────────────────────────── */}
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -381,7 +380,7 @@ export default function ProfilAplikasiPage() {
             </div>
           </div>
 
-          {/* Stats Cards */}
+          {/* ── Stats Cards ────────────────────────────────────────────────── */}
           {profile && !editing && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -397,6 +396,7 @@ export default function ProfilAplikasiPage() {
                   </div>
                 </div>
               </div>
+
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
@@ -410,10 +410,12 @@ export default function ProfilAplikasiPage() {
                   </div>
                 </div>
               </div>
+
+              {/* ✅ Saldo card dengan tombol Sync Digiflazz */}
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500 text-sm">Saldo</p>
+                    <p className="text-gray-500 text-sm">Saldo Digiflazz</p>
                     <p className="text-xl font-bold text-gray-900 mt-1">
                       {formatCurrency(profile.saldo || 0)}
                     </p>
@@ -422,11 +424,30 @@ export default function ProfilAplikasiPage() {
                     <WalletIcon className="w-8 h-8 text-purple-500" />
                   </div>
                 </div>
+
+                {/* Tombol sync */}
+                <button
+                  onClick={handleSyncSaldo}
+                  disabled={syncingSaldo}
+                  className="mt-4 w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {syncingSaldo ? (
+                    <>
+                      <Loader2Icon className="w-4 h-4 animate-spin" />
+                      Sinkronisasi...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCwIcon className="w-4 h-4" />
+                      Sync Saldo Digiflazz
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}
 
-          {/* Main Content */}
+          {/* ── Main Content ───────────────────────────────────────────────── */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -440,16 +461,14 @@ export default function ProfilAplikasiPage() {
 
             <div className="p-6">
               <div className="space-y-6">
-                {/* Logo Section */}
+                {/* Logo */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <ImageIcon className="w-4 h-4 inline mr-1" />
                     Logo Aplikasi
                   </label>
-
                   {editing ? (
                     <div className="space-y-4">
-                      {/* Preview pakai logoPreview (base64 atau URL) */}
                       {logoPreview && (
                         <div className="relative w-40 h-40 border rounded-lg p-2 bg-gray-50">
                           <ProfileLogo src={logoPreview} alt="Logo preview" />
@@ -462,7 +481,6 @@ export default function ProfilAplikasiPage() {
                           </button>
                         </div>
                       )}
-
                       <div className="flex items-center space-x-4">
                         <input
                           type="file"
@@ -497,7 +515,6 @@ export default function ProfilAplikasiPage() {
                           </button>
                         )}
                       </div>
-
                       <p className="text-sm text-gray-500">
                         Format: JPG, PNG, WebP, SVG. Maksimal 2MB
                       </p>
@@ -510,7 +527,6 @@ export default function ProfilAplikasiPage() {
                     </div>
                   ) : (
                     <div className="flex items-center space-x-4">
-                      {/* ✅ View mode — profile.logo sudah dinormalize */}
                       {profile?.logo ? (
                         <div className="relative w-40 h-40 border rounded-lg p-2 bg-gray-50">
                           <ProfileLogo
@@ -542,11 +558,7 @@ export default function ProfilAplikasiPage() {
                           value={formData.application_name}
                           onChange={handleInputChange}
                           placeholder="Masukkan nama aplikasi"
-                          className={`w-full px-3 py-2.5 border rounded-lg ${
-                            formErrors.application_name
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          }`}
+                          className={`w-full px-3 py-2.5 border rounded-lg ${formErrors.application_name ? "border-red-500" : "border-gray-300"}`}
                         />
                         {formErrors.application_name && (
                           <p className="mt-1 text-sm text-red-600">
@@ -574,11 +586,7 @@ export default function ProfilAplikasiPage() {
                           value={formData.application_fee}
                           onChange={handleInputChange}
                           placeholder="Contoh: 5000"
-                          className={`w-full px-3 py-2.5 border rounded-lg ${
-                            formErrors.application_fee
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          }`}
+                          className={`w-full px-3 py-2.5 border rounded-lg ${formErrors.application_fee ? "border-red-500" : "border-gray-300"}`}
                         />
                         {formErrors.application_fee && (
                           <p className="mt-1 text-sm text-red-600">
@@ -595,21 +603,38 @@ export default function ProfilAplikasiPage() {
                     )}
                   </div>
 
+                  {/* Saldo — read only saat edit, sync hanya dari tombol di card */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <WalletIcon className="w-4 h-4 inline mr-1" />
-                      Saldo
+                      Saldo Digiflazz
                     </label>
                     {editing ? (
-                      <input
-                        type="number"
-                        name="saldo"
-                        value={formData.saldo}
-                        onChange={handleInputChange}
-                        placeholder="0"
-                        step="0.01"
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg"
-                      />
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          name="saldo"
+                          value={formData.saldo}
+                          onChange={handleInputChange}
+                          placeholder="0"
+                          step="0.01"
+                          className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSyncSaldo}
+                          disabled={syncingSaldo}
+                          title="Sync dari Digiflazz"
+                          className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50 transition-colors"
+                        >
+                          {syncingSaldo ? (
+                            <Loader2Icon className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCwIcon className="w-4 h-4" />
+                          )}
+                          Sync
+                        </button>
+                      </div>
                     ) : (
                       <p className="text-gray-900 font-medium">
                         {formatCurrency(profile?.saldo || 0)}
@@ -632,11 +657,7 @@ export default function ProfilAplikasiPage() {
                         onChange={handleInputChange}
                         rows="6"
                         placeholder="Masukkan syarat dan ketentuan aplikasi..."
-                        className={`w-full px-3 py-2.5 border rounded-lg ${
-                          formErrors.terms_condition
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
+                        className={`w-full px-3 py-2.5 border rounded-lg ${formErrors.terms_condition ? "border-red-500" : "border-gray-300"}`}
                       />
                       {formErrors.terms_condition && (
                         <p className="mt-1 text-sm text-red-600">
@@ -668,11 +689,7 @@ export default function ProfilAplikasiPage() {
                         onChange={handleInputChange}
                         rows="6"
                         placeholder="Masukkan kebijakan privasi aplikasi..."
-                        className={`w-full px-3 py-2.5 border rounded-lg ${
-                          formErrors.privacy_policy
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
+                        className={`w-full px-3 py-2.5 border rounded-lg ${formErrors.privacy_policy ? "border-red-500" : "border-gray-300"}`}
                       />
                       {formErrors.privacy_policy && (
                         <p className="mt-1 text-sm text-red-600">
