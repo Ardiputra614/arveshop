@@ -24,7 +24,8 @@
     "react-toastify": "^11.0.5",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "websocket": "^1.0.35"
+    "websocket": "^1.0.35",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

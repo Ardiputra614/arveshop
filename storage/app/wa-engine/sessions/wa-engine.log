@@ -299,3 +299,6 @@
 [2026-03-18T23:26:58.119Z] [device_1773876321954_vlgr6s8bc] [INFO] Sending to 87864705664...
 [2026-03-18T23:27:02.270Z] [device_1773876321954_vlgr6s8bc] [SUCCESS] Message sent to 87864705664
 [2026-03-18T23:27:28.220Z] [device_1773876321954_vlgr6s8bc] [WARNING] Connection closed. Reconnect: false
+[2026-03-18T23:55:29.372Z] [system] [INFO] Client disconnected: fsWzKXkQzZ1py8QkAAAC
+[2026-03-19T00:36:22.967Z] [system] [INFO] Client connected: qtSDyF-FGuktybu4AAAF
+[2026-03-19T00:36:29.048Z] [system] [INFO] Client disconnected: qtSDyF-FGuktybu4AAAF

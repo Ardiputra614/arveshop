@@ -120,16 +120,6 @@ export default function AdminLayout({ children }) {
   ];
 
   const profileLinks = [
-    {
-      href: "/admin/profile",
-      label: "My Profile",
-      icon: <User className="w-4 h-4" />,
-    },
-    {
-      href: "/admin/settings",
-      label: "Settings",
-      icon: <Settings className="w-4 h-4" />,
-    },
     { type: "divider" },
     {
       type: "button",
