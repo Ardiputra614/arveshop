@@ -16,13 +16,22 @@ import { useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Image from "next/image";
+import DescDetail from "@/components/home/DescDetail"; // komponen sebelumnya
+// import TokenDisplay from "@/components/home/TokenDisplay"; // komponen sebelumnya
 
 export default function History() {
   const url = process.env.NEXT_PUBLIC_GOLANG_URL;
   const params = useParams();
   const order_id = params.orderid;
 
+  // ─── State ───────────────────────────────────
+  // Sesuai field di OrderUpdatePayload backend:
+  // order_id, payment_status, digiflazz_status, product_name,
+  // customer_no, serial_number, gross_amount, payment_type,
+  // payment_method_name, url, created_at,
+  // midtrans_response, digiflazz_response
   const [finalData, setFinalData] = useState({});
+
   const [copied, setCopied] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
   const [status, setStatus] = useState("pending");
@@ -39,7 +48,7 @@ export default function History() {
   const prevStatusRef = useRef("pending");
   const prevDigiflazzRef = useRef("Pending");
 
-  // ✅ Parse status dari data backend
+  // ─── Parse payment_status dari backend ───────
   const parseStatus = useCallback((paymentStatus) => {
     if (paymentStatus === "settlement" || paymentStatus === "capture")
       return "success";
@@ -49,15 +58,21 @@ export default function History() {
     return paymentStatus || "pending";
   }, []);
 
-  // ✅ Update state dari data
+  // ─── Update state dari WS / polling ──────────
+  // PENTING: pakai merge (spread prev) supaya partial
+  // update dari WS tidak menghapus field lain.
+  // Misal: callback Digiflazz hanya kirim
+  //   { order_id, digiflazz_status, serial_number, digiflazz_response }
+  // tanpa payment_status / gross_amount — harus tetap tampil.
   const updateFromData = useCallback(
     (data, showToast = false) => {
       if (!data) return;
 
       const newStatus = parseStatus(data.payment_status);
+      // digiflazz_status — field dari backend (bukan digiflazz_status_text)
       const newDigiflazz = data.digiflazz_status || "Pending";
 
-      // Cek perubahan status
+      // Toast hanya kalau ada perubahan
       if (showToast && prevStatusRef.current !== newStatus) {
         if (newStatus === "success") toast.success("✅ Pembayaran berhasil!");
         else if (newStatus === "failed") toast.error("❌ Pembayaran gagal");
@@ -73,10 +88,16 @@ export default function History() {
       prevStatusRef.current = newStatus;
       prevDigiflazzRef.current = newDigiflazz;
 
-      setFinalData(data);
-      setStatus(newStatus);
-      setDigiflazzStatus(newDigiflazz);
+      // ✅ MERGE — bukan replace total
+      // Kalau backend kirim partial (hanya digiflazz update),
+      // field lain seperti product_name / gross_amount tetap ada
+      setFinalData((prev) => ({ ...prev, ...data }));
 
+      // Update status hanya kalau field-nya ada di payload
+      if (data.payment_status) setStatus(newStatus);
+      if (data.digiflazz_status) setDigiflazzStatus(newDigiflazz);
+
+      // midtrans_response.expiry_time untuk countdown
       if (data.midtrans_response?.expiry_time) {
         setExpiryTime(new Date(data.midtrans_response.expiry_time));
       }
@@ -84,26 +105,25 @@ export default function History() {
     [parseStatus],
   );
 
-  // ✅ Fetch history
+  // ─── Initial fetch via HTTP ───────────────────
   const fetchHistory = useCallback(
     async (showToast = false) => {
       try {
         const response = await axios.get(`${url}/api/history/${order_id}`, {
           withCredentials: true,
         });
-
+        // HTTP response dibungkus { data: { ... } }
+        // WS langsung kirim payload tanpa wrapper
         if (response.data?.data) {
           updateFromData(response.data.data, showToast);
         }
-      } catch (error) {
-        // toast.error("Error fetching history");
+      } catch {
         return;
       }
     },
     [order_id, url, updateFromData],
   );
 
-  // ✅ Initial fetch
   useEffect(() => {
     if (!order_id) return;
     const init = async () => {
@@ -114,7 +134,9 @@ export default function History() {
     init();
   }, [order_id, fetchHistory]);
 
-  // ✅ WebSocket — connect ke backend
+  // ─── WebSocket ────────────────────────────────
+  // Backend push payload OrderUpdatePayload langsung (tanpa wrapper)
+  // Endpoint: wss://domain/ws/order/:order_id
   useEffect(() => {
     if (!order_id) return;
 
@@ -127,40 +149,31 @@ export default function History() {
         const ws = new WebSocket(`${wsURL}/ws/order/${order_id}`);
         wsRef.current = ws;
 
-        ws.onopen = () => {
-          // console.log("✅ WebSocket connected");
-          setIsConnected(true);
-        };
+        ws.onopen = () => setIsConnected(true);
 
         ws.onmessage = (event) => {
           try {
-            const data = JSON.parse(event.data);
-            // console.log("🔥 WebSocket update:", data);
-            updateFromData(data, true);
-          } catch (e) {
-            // toast.error("WS parse error:", e);
+            // WS kirim OrderUpdatePayload langsung — field sama persis
+            // dengan yang ada di finalData (tidak ada wrapper .data)
+            const payload = JSON.parse(event.data);
+            updateFromData(payload, true);
+          } catch {
             return;
           }
         };
 
         ws.onclose = () => {
-          // console.log("❌ WebSocket disconnected, reconnecting in 3s...");
           setIsConnected(false);
-          // Auto reconnect setelah 3 detik
           setTimeout(() => {
-            if (wsRef.current?.readyState !== WebSocket.OPEN) {
-              connect();
-            }
+            if (wsRef.current?.readyState !== WebSocket.OPEN) connect();
           }, 3000);
         };
 
-        ws.onerror = (err) => {
-          // console.error("WebSocket error:", err);
+        ws.onerror = () => {
           setIsConnected(false);
           ws.close();
         };
-      } catch (e) {
-        // console.error("WebSocket init error:", e);
+      } catch {
         setIsConnected(false);
       }
     };
@@ -169,22 +182,22 @@ export default function History() {
 
     return () => {
       if (wsRef.current) {
-        wsRef.current.onclose = null; // prevent reconnect on unmount
+        wsRef.current.onclose = null;
         wsRef.current.close();
       }
     };
   }, [order_id, url, updateFromData]);
 
-  // ✅ Polling fallback — jalan terus tapi lebih lambat kalau WS aktif
+  // ─── Polling fallback ─────────────────────────
+  // Melambat kalau WS aktif (15 detik),
+  // dipercepat kalau WS mati (5 detik)
   useEffect(() => {
     if (!order_id) return;
     if (status === "success" || status === "failed") return;
 
-    // Polling lebih cepat kalau WS tidak konek
     const interval = isConnected ? 15000 : 5000;
 
     pollingRef.current = setInterval(async () => {
-      // console.log(`🔄 Polling... (${isConnected ? "WS aktif" : "WS mati"})`);
       await fetchHistory(true);
     }, interval);
 
@@ -193,7 +206,7 @@ export default function History() {
     };
   }, [order_id, status, isConnected, fetchHistory]);
 
-  // ✅ Stop polling kalau sudah success/failed
+  // ─── Stop polling saat terminal state ────────
   useEffect(() => {
     if (status === "success" || status === "failed") {
       if (pollingRef.current) {
@@ -207,11 +220,10 @@ export default function History() {
     }
   }, [status]);
 
-  // ✅ Handle expire
+  // ─── Expire handler ───────────────────────────
   const handleExpireTransaction = useCallback(async () => {
     if (isExpiring) return;
     setIsExpiring(true);
-
     try {
       await axios.post(
         `${url}/transaction/${order_id}/expire`,
@@ -222,8 +234,7 @@ export default function History() {
       setTimeLeft(0);
       toast.info("⏰ Waktu pembayaran telah habis");
       await fetchHistory(false);
-    } catch (error) {
-      // console.error("Gagal update expired:", error);
+    } catch {
       setStatus("failed");
       setTimeLeft(0);
       toast.warning("⏰ Waktu habis");
@@ -232,7 +243,7 @@ export default function History() {
     }
   }, [order_id, url, isExpiring, fetchHistory]);
 
-  // ✅ Countdown timer
+  // ─── Countdown ────────────────────────────────
   const calculateTimeLeft = useCallback(() => {
     if (!expiryTime) return null;
     const diff = expiryTime - new Date();
@@ -241,15 +252,12 @@ export default function History() {
 
   useEffect(() => {
     if (status !== "pending" || !expiryTime) return;
-
     const initial = calculateTimeLeft();
     if (initial <= 0) {
       handleExpireTransaction();
       return;
     }
-
     setTimeLeft(initial);
-
     timerRef.current = setInterval(async () => {
       const remaining = calculateTimeLeft();
       if (remaining <= 0) {
@@ -260,13 +268,12 @@ export default function History() {
         setTimeLeft(remaining);
       }
     }, 1000);
-
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [expiryTime, status, calculateTimeLeft, handleExpireTransaction]);
 
-  // Helpers
+  // ─── Helpers ──────────────────────────────────
   const formatTime = (seconds) => {
     if (seconds === null || seconds === undefined) return "--:--";
     const h = Math.floor(seconds / 3600);
@@ -307,6 +314,7 @@ export default function History() {
   };
 
   const downloadQR = () => {
+    // finalData.url — field "url" dari backend (VA number atau QR image URL)
     if (finalData.payment_type === "qris" && finalData.url) {
       const link = document.createElement("a");
       link.href = finalData.url;
@@ -318,6 +326,7 @@ export default function History() {
     }
   };
 
+  // ─── Status config ────────────────────────────
   const statusConfig = {
     success: {
       icon: CheckCircle,
@@ -341,6 +350,8 @@ export default function History() {
 
   const CurrentIcon = statusConfig[status]?.icon || Clock;
 
+  // ─── TokenDisplay ─────────────────────────────
+  // Membaca: finalData.serial_number (field "serial_number" dari backend)
   const TokenDisplay = ({ serialNumber }) => {
     if (!serialNumber) return null;
     const isPlnToken =
@@ -368,14 +379,16 @@ export default function History() {
     );
   };
 
+  // ─── Loading ──────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
   }
 
+  // ─── Render ───────────────────────────────────
   return (
     <>
       <Head>
@@ -384,18 +397,16 @@ export default function History() {
 
       <div className="min-h-screen text-white py-8">
         <div className="max-w-4xl mx-auto px-4">
-          {/* Status Bar */}
+          {/* ── Status Bar ── */}
           <div className="mb-4 flex items-center justify-between">
             <div className="text-sm text-gray-400">Order ID: {order_id}</div>
             <div className="flex items-center gap-2">
-              {/* Polling indicator */}
               {status === "pending" && (
                 <div className="flex items-center bg-gray-800 px-3 py-1 rounded-full">
                   <div className="animate-spin rounded-full h-3 w-3 border border-blue-400 border-t-transparent mr-2" />
                   <span className="text-xs text-blue-400">Auto refresh</span>
                 </div>
               )}
-              {/* WS indicator */}
               <div className="flex items-center bg-gray-800 px-3 py-1 rounded-full">
                 {isConnected ? (
                   <>
@@ -412,7 +423,7 @@ export default function History() {
             </div>
           </div>
 
-          {/* Status Card */}
+          {/* ── Status Card ── */}
           <div className="bg-gray-800 rounded-xl p-6 mb-6">
             <div className="flex items-center gap-4">
               <CurrentIcon
@@ -448,8 +459,10 @@ export default function History() {
             )}
           </div>
 
-          {/* Token */}
-          {finalData.serial_number && (
+          {/* ── Token / Serial Number ──
+               Muncul saat: serial_number ada && digiflazz_status = Sukses
+               serial_number = field "serial_number" dari backend         */}
+          {finalData.serial_number && digiflazzStatus === "Sukses" && (
             <div className="bg-gray-800 rounded-xl p-6 mb-6">
               <h3 className="font-semibold mb-4 flex items-center">
                 <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
@@ -459,15 +472,24 @@ export default function History() {
             </div>
           )}
 
-          {/* Bank Transfer */}
+          {/* ── Pascabayar desc detail ──
+               digiflazz_response = field "digiflazz_response" dari backend
+               Muncul saat ada data desc (PLN, PDAM, BPJS, dll)           */}
+          {finalData.digiflazz_response && (
+            <DescDetail data={finalData.digiflazz_response} />
+          )}
+
+          {/* ── Virtual Account ── */}
           {finalData.payment_type === "bank_transfer" &&
             status === "pending" && (
               <div className="bg-gray-800 rounded-xl p-6 mb-6">
                 <h3 className="font-semibold mb-4 flex items-center">
                   <AlertCircle className="w-5 h-5 mr-2" />
+                  {/* payment_method_name = field "payment_method_name" dari backend */}
                   Virtual Account {finalData.payment_method_name?.toUpperCase()}
                 </h3>
                 <div className="flex justify-between items-center bg-gray-900 p-4 rounded-lg">
+                  {/* url = field "url" dari backend (nomor VA atau link QR) */}
                   <span className="font-mono text-xl">{finalData.url}</span>
                   <button
                     onClick={() => handleCopy(finalData.url)}
@@ -483,7 +505,7 @@ export default function History() {
               </div>
             )}
 
-          {/* QRIS */}
+          {/* ── QRIS ── */}
           {finalData.payment_type === "qris" &&
             status === "pending" &&
             finalData.url && (
@@ -512,16 +534,20 @@ export default function History() {
               </div>
             )}
 
-          {/* Transaction Details */}
+          {/* ── Informasi Transaksi ── */}
           <div className="bg-gray-800 rounded-xl p-6">
             <h3 className="font-semibold mb-4 pb-3 border-b border-gray-700">
               Informasi Transaksi
             </h3>
             <div className="space-y-3">
               {[
+                // order_id — field "order_id"
                 { label: "Order ID", value: finalData.order_id, mono: true },
+                // product_name — field "product_name"
                 { label: "Produk", value: finalData.product_name },
+                // customer_no — field "customer_no"
                 { label: "Nomor Tujuan", value: finalData.customer_no },
+                // payment_method_name — field "payment_method_name"
                 {
                   label: "Metode Pembayaran",
                   value: finalData.payment_method_name?.toUpperCase(),
@@ -535,6 +561,7 @@ export default function History() {
                 </div>
               ))}
 
+              {/* digiflazz_status — field "digiflazz_status" dari backend */}
               <div className="flex justify-between py-2">
                 <span className="text-gray-400">Status Pemesanan</span>
                 <span
@@ -546,14 +573,15 @@ export default function History() {
                         : "text-yellow-400"
                   }`}
                 >
-                  {digiflazzStatus === "Sukses"
+                  {digiflazzStatus === "Sukses" || "success"
                     ? "Berhasil"
                     : digiflazzStatus === "Gagal"
                       ? "Gagal"
-                      : digiflazzStatus || "Menunggu"}
+                      : "Menunggu"}
                 </span>
               </div>
 
+              {/* created_at — field "created_at" dari backend */}
               <div className="flex justify-between py-2">
                 <span className="text-gray-400">Tanggal Transaksi</span>
                 <span className="font-medium">
@@ -583,6 +611,7 @@ export default function History() {
                 </div>
               )}
 
+              {/* gross_amount — field "gross_amount" dari backend */}
               <div className="flex justify-between py-2 font-bold border-t border-gray-700 pt-4 mt-2">
                 <span>Total Pembayaran</span>
                 <span className="text-lg">

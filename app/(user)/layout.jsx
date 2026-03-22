@@ -27,7 +27,8 @@ async function getUser() {
     const accessToken = cookieStore.get("access_token");
     if (!accessToken) return null;
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_GOLANG_URL}/api/me`, {
+    // const res = await fetch(`${process.env.NEXT_PUBLIC_GOLANG_URL}/api/me`, {
+    const res = await fetch(`${process.env.GOLANG_URL}/api/me`, {
       headers: {
         Cookie: cookieHeader,
       },

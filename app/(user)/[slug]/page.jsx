@@ -172,7 +172,7 @@ const GamesTopup = () => {
     if (service.customer_no_format === "dua_input") {
       const f1 = accountData.field1 || "";
       const f2 = accountData.field2 || "";
-      return f1 && f2 ? `${f1}|${f2}` : f1 || f2 || "";
+      return f1 && f2 ? `${f1}${f2}` : f1 || f2 || "";
     }
     return "";
   };
@@ -544,7 +544,7 @@ const GamesTopup = () => {
       selling_price: selectedProduct.selling_price,
       purchase_price: selectedProduct.price,
       product_type: selectedProduct.product_type || "game",
-      // user_id: user?.id,
+      user_id: user?.id || user?.user_id || null,
       is_admin: false,
 
       // Payment

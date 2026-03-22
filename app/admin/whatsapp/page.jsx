@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useCallback } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { toast, ToastContainer } from "react-toastify";
@@ -33,8 +35,9 @@ import {
 } from "lucide-react";
 import io from "socket.io-client";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://202.10.36.51:4000/api";
+const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || "http://202.10.36.51:4000";
 
 export default function WaEnginePage() {
   const [devices, setDevices] = useState([]);
@@ -391,7 +394,11 @@ export default function WaEnginePage() {
 
       if (data.success && socket) {
         socket.emit("request_qr", { deviceId });
-        addLog({ type: "info", device: "System", message: "Refreshing QR code..." });
+        addLog({
+          type: "info",
+          device: "System",
+          message: "Refreshing QR code...",
+        });
         toast.info("Generating new QR code...");
       }
     } catch (error) {
@@ -430,8 +437,15 @@ export default function WaEnginePage() {
               : device,
           ),
         );
-        setStats((prev) => ({ ...prev, activeDevices: prev.activeDevices - 1 }));
-        addLog({ type: "warning", device: "System", message: "Device disconnected" });
+        setStats((prev) => ({
+          ...prev,
+          activeDevices: prev.activeDevices - 1,
+        }));
+        addLog({
+          type: "warning",
+          device: "System",
+          message: "Device disconnected",
+        });
         toast.info("Device disconnected");
       }
     } catch (error) {
@@ -717,7 +731,9 @@ export default function WaEnginePage() {
                   onClick={fetchDevices}
                   className="inline-flex items-center justify-center px-4 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 >
-                  <RefreshCw className={`w-5 h-5 ${loading.devices ? "animate-spin" : ""}`} />
+                  <RefreshCw
+                    className={`w-5 h-5 ${loading.devices ? "animate-spin" : ""}`}
+                  />
                 </button>
               </div>
             </div>
@@ -780,9 +796,19 @@ export default function WaEnginePage() {
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8 px-6" aria-label="Tabs">
                 {[
-                  { id: "devices", label: "Devices", icon: Smartphone, count: devices.length },
+                  {
+                    id: "devices",
+                    label: "Devices",
+                    icon: Smartphone,
+                    count: devices.length,
+                  },
                   { id: "send", label: "Send Message", icon: Send },
-                  { id: "logs", label: "System Logs", icon: Activity, count: logs.length },
+                  {
+                    id: "logs",
+                    label: "System Logs",
+                    icon: Activity,
+                    count: logs.length,
+                  },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -921,7 +947,9 @@ export default function WaEnginePage() {
                                     className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(device.status)} flex items-center space-x-1`}
                                   >
                                     {getStatusIcon(device.status)}
-                                    <span className="ml-1">{device.status}</span>
+                                    <span className="ml-1">
+                                      {device.status}
+                                    </span>
                                   </span>
                                   {device.number && (
                                     <span className="text-xs text-gray-500">
@@ -932,7 +960,9 @@ export default function WaEnginePage() {
                               </div>
                             </div>
                             <button
-                              onClick={() => setDeviceSettingsModal({ open: true, device })}
+                              onClick={() =>
+                                setDeviceSettingsModal({ open: true, device })
+                              }
                               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
                               title="Settings"
                             >
@@ -946,7 +976,9 @@ export default function WaEnginePage() {
                               <>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="bg-white p-4 rounded-lg border">
-                                    <p className="text-xs text-gray-600 mb-1">Messages Sent</p>
+                                    <p className="text-xs text-gray-600 mb-1">
+                                      Messages Sent
+                                    </p>
                                     <div className="flex items-end justify-between">
                                       <p className="text-2xl font-bold text-gray-900">
                                         {device.stats.messagesSent}
@@ -957,7 +989,9 @@ export default function WaEnginePage() {
                                     </div>
                                   </div>
                                   <div className="bg-white p-4 rounded-lg border">
-                                    <p className="text-xs text-gray-600 mb-1">Last Activity</p>
+                                    <p className="text-xs text-gray-600 mb-1">
+                                      Last Activity
+                                    </p>
                                     <p className="text-sm font-semibold text-gray-900">
                                       {formatTime(device.stats.lastActivity)}
                                     </p>
@@ -979,7 +1013,10 @@ export default function WaEnginePage() {
                                   <button
                                     onClick={() => {
                                       setActiveTab("send");
-                                      setSendForm((prev) => ({ ...prev, device_id: device.id }));
+                                      setSendForm((prev) => ({
+                                        ...prev,
+                                        device_id: device.id,
+                                      }));
                                     }}
                                     className="flex-1 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center justify-center"
                                   >
@@ -992,8 +1029,12 @@ export default function WaEnginePage() {
                               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border-2 border-dashed border-blue-200">
                                 <div className="flex items-center justify-between mb-4">
                                   <div>
-                                    <p className="text-sm font-medium text-gray-700">Scan QR Code</p>
-                                    <p className="text-xs text-gray-500">Scan with WhatsApp to connect</p>
+                                    <p className="text-sm font-medium text-gray-700">
+                                      Scan QR Code
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Scan with WhatsApp to connect
+                                    </p>
                                   </div>
                                   <button
                                     onClick={() => setScanGuideModal(true)}
@@ -1044,8 +1085,12 @@ export default function WaEnginePage() {
               {activeTab === "send" && (
                 <div className="max-w-3xl mx-auto">
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900">Send WhatsApp Message</h3>
-                    <p className="text-gray-500">Send messages through connected WhatsApp devices</p>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Send WhatsApp Message
+                    </h3>
+                    <p className="text-gray-500">
+                      Send messages through connected WhatsApp devices
+                    </p>
                   </div>
 
                   <form onSubmit={handleSendMessage} className="space-y-6">
@@ -1071,14 +1116,21 @@ export default function WaEnginePage() {
                                 value={device.id}
                                 checked={sendForm.device_id === device.id}
                                 onChange={(e) =>
-                                  setSendForm((prev) => ({ ...prev, device_id: e.target.value }))
+                                  setSendForm((prev) => ({
+                                    ...prev,
+                                    device_id: e.target.value,
+                                  }))
                                 }
                                 className="h-4 w-4 text-blue-600"
                               />
                               <div className="ml-3 flex-1">
                                 <div className="flex items-center justify-between">
-                                  <span className="font-medium text-gray-900">{device.name}</span>
-                                  <span className="text-xs text-gray-500">{device.number}</span>
+                                  <span className="font-medium text-gray-900">
+                                    {device.name}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {device.number}
+                                  </span>
                                 </div>
                                 <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
                                   <span className="flex items-center">
@@ -1094,9 +1146,11 @@ export default function WaEnginePage() {
                             </label>
                           ))}
                       </div>
-                      {devices.filter((d) => d.status === "connected").length === 0 && (
+                      {devices.filter((d) => d.status === "connected")
+                        .length === 0 && (
                         <p className="text-sm text-red-500 mt-2">
-                          No connected devices available. Please connect a device first.
+                          No connected devices available. Please connect a
+                          device first.
                         </p>
                       )}
                     </div>
@@ -1123,7 +1177,9 @@ export default function WaEnginePage() {
                           required
                         />
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">Format: 81234567890 (without +62)</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Format: 81234567890 (without +62)
+                      </p>
                     </div>
 
                     <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl border border-gray-200">
@@ -1133,7 +1189,10 @@ export default function WaEnginePage() {
                       <textarea
                         value={sendForm.message}
                         onChange={(e) =>
-                          setSendForm((prev) => ({ ...prev, message: e.target.value }))
+                          setSendForm((prev) => ({
+                            ...prev,
+                            message: e.target.value,
+                          }))
                         }
                         rows={6}
                         placeholder="Type your message here..."
@@ -1141,8 +1200,12 @@ export default function WaEnginePage() {
                         required
                       />
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs text-gray-500">Max 4096 characters</span>
-                        <span className={`text-sm ${sendForm.message.length > 4000 ? "text-red-500" : "text-gray-500"}`}>
+                        <span className="text-xs text-gray-500">
+                          Max 4096 characters
+                        </span>
+                        <span
+                          className={`text-sm ${sendForm.message.length > 4000 ? "text-red-500" : "text-gray-500"}`}
+                        >
                           {sendForm.message.length}/4096
                         </span>
                       </div>
@@ -1174,8 +1237,12 @@ export default function WaEnginePage() {
                 <div>
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">System Activity Logs</h3>
-                      <p className="text-gray-500">Real-time monitoring of all activities</p>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        System Activity Logs
+                      </h3>
+                      <p className="text-gray-500">
+                        Real-time monitoring of all activities
+                      </p>
                     </div>
                     <div className="flex items-center space-x-3">
                       <button
@@ -1265,7 +1332,10 @@ export default function WaEnginePage() {
 
       {/* Add Device Modal */}
       <Transition show={addDeviceModal}>
-        <Dialog onClose={() => setAddDeviceModal(false)} className="relative z-50">
+        <Dialog
+          onClose={() => setAddDeviceModal(false)}
+          className="relative z-50"
+        >
           <Transition.Child
             enter="ease-out duration-300"
             enterFrom="opacity-0"
@@ -1305,7 +1375,10 @@ export default function WaEnginePage() {
                           type="text"
                           value={newDevice.name}
                           onChange={(e) =>
-                            setNewDevice((prev) => ({ ...prev, name: e.target.value }))
+                            setNewDevice((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
                           }
                           placeholder="e.g., Marketing Phone"
                           className="w-full px-3 py-2.5 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1319,7 +1392,10 @@ export default function WaEnginePage() {
                         <select
                           value={newDevice.type}
                           onChange={(e) =>
-                            setNewDevice((prev) => ({ ...prev, type: e.target.value }))
+                            setNewDevice((prev) => ({
+                              ...prev,
+                              type: e.target.value,
+                            }))
                           }
                           className="w-full px-3 py-2.5 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
@@ -1434,18 +1510,41 @@ export default function WaEnginePage() {
 
               <div className="space-y-4">
                 {[
-                  { step: 1, title: "Open WhatsApp", description: "Open WhatsApp on your mobile phone" },
-                  { step: 2, title: "Go to Settings", description: "Tap ⋮ (three dots) → Linked Devices" },
-                  { step: 3, title: "Scan QR Code", description: "Tap 'Link a Device' and scan the QR code" },
-                  { step: 4, title: "Wait for Connection", description: "Wait for the device status to change to 'Connected'" },
+                  {
+                    step: 1,
+                    title: "Open WhatsApp",
+                    description: "Open WhatsApp on your mobile phone",
+                  },
+                  {
+                    step: 2,
+                    title: "Go to Settings",
+                    description: "Tap ⋮ (three dots) → Linked Devices",
+                  },
+                  {
+                    step: 3,
+                    title: "Scan QR Code",
+                    description: "Tap 'Link a Device' and scan the QR code",
+                  },
+                  {
+                    step: 4,
+                    title: "Wait for Connection",
+                    description:
+                      "Wait for the device status to change to 'Connected'",
+                  },
                 ].map((item) => (
                   <div key={item.step} className="flex items-start space-x-3">
                     <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-blue-600 font-bold">{item.step}</span>
+                      <span className="text-blue-600 font-bold">
+                        {item.step}
+                      </span>
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900">{item.title}</h4>
-                      <p className="text-sm text-gray-600">{item.description}</p>
+                      <h4 className="font-medium text-gray-900">
+                        {item.title}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {item.description}
+                      </p>
                     </div>
                   </div>
                 ))}

@@ -5,76 +5,46 @@ import { Trophy, ShoppingBag } from "lucide-react";
 import Service from "../../components/home/service";
 import axios from "axios";
 
+// 🚀 Constants di luar komponen biar gak dibuat ulang
+const CACHE_TTL = 5 * 60 * 1000; // 5 menit
+const URL = process.env.NEXT_PUBLIC_GOLANG_URL;
+
+// 🚀 Helper untuk cache dengan expiry
+const cacheManager = {
+  get: (key) => {
+    const cached = sessionStorage.getItem(key);
+    if (!cached) return null;
+
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_TTL) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  },
+  set: (key, data) => {
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({
+        data,
+        timestamp: Date.now(),
+      }),
+    );
+  },
+};
+
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [activePromo, setActivePromo] = useState(0);
   const [kategori, setKategori] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const promoRef = useRef(null);
-  const url = process.env.NEXT_PUBLIC_GOLANG_URL;
+  const fetchedRef = useRef(false); // 🚀 Prevent double fetch
 
-  // Cache untuk menghindari fetch berulang di development
-  const cache = useMemo(() => new Map(), []);
-
-  const fetchData = useCallback(async () => {
-    if (cache.has("categories") && cache.has("services")) {
-      setCategories(cache.get("categories"));
-      setServices(cache.get("services"));
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const [categoriesRes, servicesRes] = await Promise.all([
-        axios.get(`${url}/api/categories`),
-        axios.get(`${url}/api/services`),
-      ]);
-
-      const categoriesData = categoriesRes.data.data || [];
-      const servicesData = servicesRes.data.data || [];
-
-      cache.set("categories", categoriesData);
-      cache.set("services", servicesData);
-
-      setCategories(categoriesData);
-      setServices(servicesData);
-    } catch (err) {
-      // console.error("Error fetching data:", err);
-      return;
-    } finally {
-      setLoading(false);
-    }
-  }, [cache, url]); // ✅ hapus kategori dari sini
-
-  // ✅ Set kategori awal terpisah, hanya jalan sekali setelah categories loaded
-  useEffect(() => {
-    if (categories.length > 0 && !kategori) {
-      setKategori(categories[0].id);
-    }
-  }, [categories]); // ← hanya bergantung pada categories
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]); // ← sekarang hanya jalan sekali
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Filter services dengan useMemo
-  const servicesData = useMemo(() => {
-    if (!kategori || !services.length) return [];
-
-    // console.log("Filtering services for kategori:", kategori);
-
-    return services.filter((service) => {
-      return String(service.category_id) === String(kategori);
-    });
-  }, [services, kategori]);
-
-  // Promos data - static, tidak perlu re-render
+  // 🚀 Promos static - pindah ke luar atau pake useRef
   const promos = useMemo(
     () => [
       {
@@ -88,9 +58,73 @@ export default function HomePage() {
     [],
   );
 
-  // AUTO SLIDE
+  // 🚀 Fetch data dengan cache & error handling
+  const fetchData = useCallback(async () => {
+    // Cek cache dulu
+    const cachedCategories = cacheManager.get("categories");
+    const cachedServices = cacheManager.get("services");
+
+    if (cachedCategories && cachedServices) {
+      setCategories(cachedCategories);
+      setServices(cachedServices);
+      setLoading(false);
+      // Set kategori awal kalau belum ada
+      if (cachedCategories.length > 0 && !kategori) {
+        setKategori(cachedCategories[0].id);
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [categoriesRes, servicesRes] = await Promise.all([
+        axios.get(`${URL}/api/categories`, { timeout: 10000 }),
+        axios.get(`${URL}/api/services`, { timeout: 10000 }),
+      ]);
+
+      const categoriesData = categoriesRes.data?.data || [];
+      const servicesData = servicesRes.data?.data || [];
+
+      // Simpan ke cache
+      cacheManager.set("categories", categoriesData);
+      cacheManager.set("services", servicesData);
+
+      setCategories(categoriesData);
+      setServices(servicesData);
+
+      // Set kategori awal
+      if (categoriesData.length > 0) {
+        setKategori(categoriesData[0].id);
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Gagal memuat data. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [kategori]); // 🚀 Hanya depend on kategori
+
+  // 🚀 Single useEffect dengan ref guard
   useEffect(() => {
-    if (!promos.length) return;
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchData();
+    }
+  }, [fetchData]);
+
+  // 🚀 Filter services optimized
+  const servicesData = useMemo(() => {
+    if (!kategori || !services.length) return [];
+    return services.filter(
+      (service) => String(service.category_id) === String(kategori),
+    );
+  }, [services, kategori]);
+
+  // 🚀 Auto slide promo dengan cleanup
+  useEffect(() => {
+    if (promos.length <= 1) return;
 
     const interval = setInterval(() => {
       setActivePromo((prev) => (prev + 1) % promos.length);
@@ -99,13 +133,50 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [promos.length]);
 
-  // Loading state
-  if (loading) {
+  // 🚀 Error state
+  if (error) {
     return (
       <div className="min-h-screen bg-[#37353E] flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
-          <p className="text-white">Memuat data...</p>
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={() => fetchData()}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 🚀 Loading state dengan skeleton (lebih baik)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#37353E]">
+        <div className="container mx-auto px-4 py-10">
+          {/* Skeleton Hero */}
+          <div className="h-64 rounded-3xl bg-gray-700 animate-pulse mb-12" />
+
+          {/* Skeleton Categories */}
+          <div className="flex gap-2 mb-12">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-12 w-24 bg-gray-700 rounded-2xl animate-pulse"
+              />
+            ))}
+          </div>
+
+          {/* Skeleton Services */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div
+                key={i}
+                className="h-48 bg-gray-700 rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -127,7 +198,7 @@ export default function HomePage() {
                     idx === activePromo ? "opacity-100 z-10" : "opacity-0 z-0"
                   }`}
                 >
-                  <div className="absolute inset-0 bg-black/40"></div>
+                  <div className="absolute inset-0 bg-black/40" />
                   <div className="absolute top-6 right-8">{promo.icon}</div>
                   <div className="absolute bottom-8 left-8 right-8">
                     <h3 className="text-2xl font-bold text-white mb-2">
@@ -219,7 +290,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CSS untuk hide scrollbar */}
       <style jsx>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
