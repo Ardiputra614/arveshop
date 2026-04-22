@@ -442,7 +442,7 @@ export default function MonitorPage() {
 
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200">
-          <nav className="flex space-x-8">
+          <nav className="flex overflow-auto">
             <button
               onClick={() => setActiveTab("pending")}
               className={`pb-4 px-1 flex items-center space-x-2 border-b-2 font-medium text-sm transition-colors ${

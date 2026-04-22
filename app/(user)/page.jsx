@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Trophy, ShoppingBag } from "lucide-react";
 import Service from "../../components/home/service";
-import axios from "axios";
 
-// 🚀 Constants di luar komponen biar gak dibuat ulang
-const CACHE_TTL = 5 * 60 * 1000; // 5 menit
+const CACHE_TTL = 5 * 60 * 1000;
 const URL = process.env.NEXT_PUBLIC_GOLANG_URL;
 
-// 🚀 Helper untuk cache dengan expiry
+// Cache helper
 const cacheManager = {
   get: (key) => {
     const cached = sessionStorage.getItem(key);
@@ -36,93 +34,158 @@ const cacheManager = {
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
-  const [activePromo, setActivePromo] = useState(0);
   const [kategori, setKategori] = useState(null);
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
 
-  const promoRef = useRef(null);
-  const fetchedRef = useRef(false); // 🚀 Prevent double fetch
+  const fetchedRef = useRef(false);
 
-  // 🚀 Promos static - pindah ke luar atau pake useRef
+  const getServiceCacheKey = (kategoriId, page) =>
+    `services_${kategoriId}_${page}`;
+
   const promos = useMemo(
     () => [
       {
         id: 1,
+        image:
+          "https://res.cloudinary.com/dzdjh1mps/image/upload/v1773848093/services/logos/shopeepay_1773848092.jpg",
         title: "DISKON SPESIAL 50%",
         description: "Top up Mobile Legends diskon besar!",
-        bgColor: "bg-gradient-to-r from-purple-800 via-pink-800 to-rose-900",
-        icon: <Trophy className="text-yellow-400" size={32} />,
+      },
+      {
+        id: 2,
+        image:
+          "https://res.cloudinary.com/dzdjh1mps/image/upload/v1770699148/services/logos/pln_1770699147.jpg",
+        title: "Promo Game",
+        description: "Harga terbaik hari ini",
       },
     ],
     [],
   );
 
-  // 🚀 Fetch data dengan cache & error handling
-  const fetchData = useCallback(async () => {
-    // Cek cache dulu
-    const cachedCategories = cacheManager.get("categories");
-    const cachedServices = cacheManager.get("services");
+  // =========================
+  // FETCH CATEGORIES
+  // =========================
+  const fetchCategories = async () => {
+    const cached = cacheManager.get("categories");
 
-    if (cachedCategories && cachedServices) {
-      setCategories(cachedCategories);
-      setServices(cachedServices);
-      setLoading(false);
-      // Set kategori awal kalau belum ada
-      if (cachedCategories.length > 0 && !kategori) {
-        setKategori(cachedCategories[0].id);
+    if (cached) {
+      setCategories(cached);
+      if (!kategori && cached.length > 0) {
+        setKategori(cached[0].id);
       }
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      const res = await fetch(`${URL}/api/categories`);
+      const json = await res.json();
 
-      const [categoriesRes, servicesRes] = await Promise.all([
-        axios.get(`${URL}/api/categories`, { timeout: 10000 }),
-        axios.get(`${URL}/api/services`, { timeout: 10000 }),
-      ]);
+      const data = json?.data || [];
 
-      const categoriesData = categoriesRes.data?.data || [];
-      const servicesData = servicesRes.data?.data || [];
+      cacheManager.set("categories", data);
+      setCategories(data);
 
-      // Simpan ke cache
-      cacheManager.set("categories", categoriesData);
-      cacheManager.set("services", servicesData);
-
-      setCategories(categoriesData);
-      setServices(servicesData);
-
-      // Set kategori awal
-      if (categoriesData.length > 0) {
-        setKategori(categoriesData[0].id);
+      if (data.length > 0) {
+        setKategori(data[0].id);
       }
     } catch (err) {
-      console.error("Error fetching data:", err);
-      setError("Gagal memuat data. Silakan coba lagi.");
+      console.error(err);
+      setError("Gagal load kategori");
+    }
+  };
+
+  // =========================
+  // FETCH SERVICES (PAGINATION)
+  // =========================
+  const fetchServices = async (
+    pageNum = 1,
+    kategoriId = null,
+    append = false,
+  ) => {
+    try {
+      if (pageNum === 1) setLoading(true);
+      else setLoadingMore(true);
+
+      const cacheKey = getServiceCacheKey(kategoriId, pageNum);
+      const cached = cacheManager.get(cacheKey);
+
+      if (cached) {
+        setServices((prev) =>
+          append ? [...prev, ...cached.data] : cached.data,
+        );
+        setHasMore(pageNum < cached.meta.total_page);
+        return;
+      }
+
+      const res = await fetch(
+        `${URL}/api/services?page=${pageNum}&limit=12&category_id=${kategoriId}`,
+      );
+
+      const json = await res.json();
+
+      const newData = json?.data || [];
+      const meta = json?.meta;
+
+      // simpan cache
+      cacheManager.set(cacheKey, {
+        data: newData,
+        meta,
+      });
+
+      setServices((prev) => (append ? [...prev, ...newData] : newData));
+
+      setHasMore(pageNum < meta.total_page);
+    } catch (err) {
+      console.error(err);
+      setError("Gagal load layanan");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [kategori]); // 🚀 Hanya depend on kategori
+  };
 
-  // 🚀 Single useEffect dengan ref guard
+  // =========================
+  // INITIAL LOAD
+  // =========================
   useEffect(() => {
     if (!fetchedRef.current) {
       fetchedRef.current = true;
-      fetchData();
+      fetchCategories();
     }
-  }, [fetchData]);
+  }, []);
 
-  // 🚀 Filter services optimized
-  const servicesData = useMemo(() => {
-    if (!kategori || !services.length) return [];
-    return services.filter(
-      (service) => String(service.category_id) === String(kategori),
-    );
-  }, [services, kategori]);
+  // =========================
+  // LOAD SERVICES SAAT KATEGORI BERUBAH
+  // =========================
+  useEffect(() => {
+    if (kategori) {
+      setPage(1);
+      setServices([]); // 🔥 kosongkan dulu biar smooth
+      fetchServices(1, kategori, false);
+      fetchPopularServices();
+    }
+  }, [kategori]);
 
-  // 🚀 Auto slide promo dengan cleanup
+  // =========================
+  // LOAD MORE
+  // =========================
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchServices(nextPage, kategori, true);
+  };
+
+  // =========================
+  // AUTO SLIDE PROMO
+  // =========================
+  const [activePromo, setActivePromo] = useState(0);
+
   useEffect(() => {
     if (promos.length <= 1) return;
 
@@ -133,15 +196,45 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [promos.length]);
 
-  // 🚀 Error state
+  // const promoInitialized = useRef(false);
+
+  // useEffect(() => {
+  //   if (promoInitialized.current) return;
+
+  //   promoInitialized.current = true;
+
+  //   const interval = setInterval(() => {
+  //     setActivePromo((prev) => (prev + 1) % promos.length);
+  //   }, 5000);
+
+  //   return () => clearInterval(interval);
+  // }, []);
+
+  const [popularServices, setPopularServices] = useState([]);
+
+  const fetchPopularServices = async () => {
+    try {
+      const res = await fetch(`${URL}/api/services/popular`);
+      const json = await res.json();
+
+      cacheManager.set("popular_services", json.data);
+      setPopularServices(json.data || []);
+    } catch (err) {
+      console.error("Error popular:", err);
+    }
+  };
+
+  // =========================
+  // ERROR
+  // =========================
   if (error) {
     return (
       <div className="min-h-screen bg-[#37353E] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">{error}</p>
           <button
-            onClick={() => fetchData()}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            onClick={() => fetchServices(1, kategori)}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg"
           >
             Coba Lagi
           </button>
@@ -150,155 +243,157 @@ export default function HomePage() {
     );
   }
 
-  // 🚀 Loading state dengan skeleton (lebih baik)
+  // =========================
+  // LOADING
+  // =========================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#37353E]">
-        <div className="container mx-auto px-4 py-10">
-          {/* Skeleton Hero */}
-          <div className="h-64 rounded-3xl bg-gray-700 animate-pulse mb-12" />
-
-          {/* Skeleton Categories */}
-          <div className="flex gap-2 mb-12">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-12 w-24 bg-gray-700 rounded-2xl animate-pulse"
-              />
-            ))}
-          </div>
-
-          {/* Skeleton Services */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div
-                key={i}
-                className="h-48 bg-gray-700 rounded-xl animate-pulse"
-              />
-            ))}
-          </div>
-        </div>
+      <div className="min-h-screen bg-[#37353E] p-10 text-white">
+        Loading...
       </div>
     );
   }
 
-  return (
-    <>
-      {/* HERO / PROMO */}
-      <div className="relative overflow-hidden bg-[#37353E]">
-        <div className="container mx-auto px-4 py-10 relative">
-          <div ref={promoRef} className="mb-12">
-            <div className="relative h-64 rounded-3xl overflow-hidden border border-gray-700/50">
-              {promos.map((promo, idx) => (
-                <div
-                  key={promo.id}
-                  className={`absolute inset-0 transition-all duration-700 ${
-                    promo.bgColor
-                  } ${
-                    idx === activePromo ? "opacity-100 z-10" : "opacity-0 z-0"
-                  }`}
-                >
-                  <div className="absolute inset-0 bg-black/40" />
-                  <div className="absolute top-6 right-8">{promo.icon}</div>
-                  <div className="absolute bottom-8 left-8 right-8">
-                    <h3 className="text-2xl font-bold text-white mb-2">
-                      {promo.title}
-                    </h3>
-                    <p className="text-gray-200">{promo.description}</p>
-                  </div>
-                </div>
-              ))}
+  const gradients = [
+    "bg-gradient-to-r from-yellow-800 to-yellow-600",
+    "bg-gradient-to-r from-blue-700 to-blue-500",
+    "bg-gradient-to-r from-indigo-700 to-indigo-500",
+    "bg-gradient-to-r from-orange-700 to-orange-500",
+    "bg-gradient-to-r from-purple-700 to-purple-500",
+    "bg-gradient-to-r from-gray-700 to-gray-500",
+  ];
 
-              {/* Promo Indicators */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
-                {promos.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActivePromo(idx)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      idx === activePromo
-                        ? "bg-white w-4"
-                        : "bg-white/50 hover:bg-white/80"
-                    }`}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
+  const PopularSection = ({ data }) => {
+    return (
+      <div className="mb-10">
+        {/* TITLE */}
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            🔥 POPULER SEKARANG!
+          </h2>
+          <p className="text-gray-400 text-sm">
+            Berikut adalah beberapa produk yang paling populer saat ini.
+          </p>
+        </div>
+
+        {/* GRID */}
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {data.map((item, index) => (
+            <div
+              key={item.id}
+              className={`relative rounded-2xl p-4 flex items-center gap-3 overflow-hidden cursor-pointer transition hover:scale-[1.02]`}
+            >
+              {/* BACKGROUND GRADIENT */}
+              <div
+                className={`absolute inset-0 opacity-90 bg-gray-700 text-white ${gradients[index]}`}
+              />
+
+              {/* CONTENT */}
+              <div className="relative flex items-center gap-3 z-10">
+                <img
+                  src={`${item.logo}?f_auto,q_auto,w_100`}
+                  alt={item.name}
+                  className="w-14 h-14 rounded-xl object-cover"
+                />
+
+                <div>
+                  <h3 className="text-white font-semibold text-sm md:text-base">
+                    {item.name}
+                  </h3>
+                  <p className="text-gray-200 text-xs">
+                    {item.category?.name || "Game"}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const selectedCategory = categories.find((c) => c.id === kategori);
+
+  return (
+    <>
+      {/* HERO */}
+      <div className="bg-[#37353E] p-6">
+        <div className="relative h-64 rounded-3xl overflow-hidden">
+          {promos.map((promo, idx) => (
+            <div
+              key={promo.id}
+              className={`absolute inset-0 transition-opacity duration-700 ${
+                idx === activePromo ? "opacity-100 z-10" : "opacity-0 z-0"
+              }`}
+            >
+              {/* IMAGE */}
+              <img
+                src={`${promo.image}?f_auto,q_auto,w_1200`}
+                alt={promo.title}
+                className="w-full h-full object-cover"
+              />
+
+              {/* OVERLAY */}
+              <div className="absolute inset-0 bg-black/40" />
+
+              {/* TEXT */}
+              <div className="absolute bottom-6 left-6 text-white">
+                <h3 className="text-2xl font-bold">{promo.title}</h3>
+                <p>{promo.description}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className="container mx-auto px-4 bg-[#37353E] pb-12">
-        {/* KATEGORI */}
-        {categories.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-[#D3DAD9] mb-4">
-              Kategori Layanan
-            </h2>
+      <PopularSection data={popularServices} />
 
-            <div className="flex overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setKategori(category.id)}
-                  className={`${
-                    category.id === kategori
-                      ? "bg-black text-white border-blue-500"
-                      : "bg-transparent text-gray-300 hover:bg-gray-700 border-gray-600"
-                  } px-6 py-2.5 mx-2 rounded-2xl border cursor-pointer transition-all duration-200 font-medium`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* MAIN */}
+      <div className="container mx-auto px-4 pb-10 bg-[#37353E]">
+        {/* CATEGORY */}
+        <div className="flex overflow-x-auto mb-6">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setKategori(cat.id)}
+              className={`px-4 py-2 mx-2 rounded-xl ${
+                kategori === cat.id
+                  ? "bg-white text-black"
+                  : "bg-gray-700 text-white"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
 
         {/* SERVICES */}
-        <div className="mb-12">
-          {servicesData && servicesData.length > 0 ? (
+        {services.length > 0 ? (
+          <>
             <Service
-              games={servicesData}
-              title={(() => {
-                const selectedCategory = categories.find(
-                  (c) => c.id === kategori,
-                );
-                return selectedCategory
-                  ? selectedCategory.name
-                  : "Layanan Populer";
-              })()}
+              games={services}
+              title={selectedCategory?.name || "Layanan"}
               layout="grid"
               columns={4}
             />
-          ) : (
-            <div className="text-center py-16 bg-[#44444E] rounded-3xl">
-              <ShoppingBag className="w-20 h-20 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-white mb-2">
-                {categories.length === 0
-                  ? "Tidak ada kategori"
-                  : "Belum ada layanan untuk kategori ini"}
-              </h3>
-              <p className="text-gray-400 text-lg">
-                {categories.length === 0
-                  ? "Silahkan tambahkan kategori terlebih dahulu"
-                  : "Silahkan pilih kategori lain"}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
 
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+            {/* LOAD MORE */}
+            {hasMore && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl"
+                >
+                  {loadingMore ? "Loading..." : "Load More"}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center text-white py-10">Tidak ada layanan</div>
+        )}
+      </div>
     </>
   );
 }

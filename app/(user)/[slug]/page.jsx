@@ -244,6 +244,36 @@ const GamesTopup = () => {
     return accountOk && plnOk && nameOk && paymentOk && waOk;
   };
 
+  const groupedPaymentMethods = paymentMethods.reduce((acc, method) => {
+    const type = method.type || "Lainnya";
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(method);
+    return acc;
+  }, {});
+
+  const [openAccordion, setOpenAccordion] = useState(null);
+
+  const toggleAccordion = (type) => {
+    setOpenAccordion(openAccordion === type ? null : type);
+  };
+
+  const formatType = (type) => {
+    switch (type.toLowerCase()) {
+      case "bank_transfer":
+        return "Virtual Account";
+      case "cc":
+        return "Credit Card";
+      case "ewallet":
+        return "E-Wallet";
+      case "cstore":
+        return "Retail Outlet";
+      case "qris":
+        return "QRIS";
+      default:
+        return type;
+    }
+  };
+
   // =============================================
   // RENDER INPUT AKUN
   // =============================================
@@ -549,7 +579,7 @@ const GamesTopup = () => {
 
       // Payment
       gross_amount: calculateTotalPayment(),
-      fee: calculateTotalFee(),
+      fee: paymentMethod.nominal_fee,
       payment_method_id: paymentMethod.id,
       payment_method_name: paymentMethod.name,
       payment_type: paymentMethod.type,
@@ -567,24 +597,15 @@ const GamesTopup = () => {
 
       // Admin (default false untuk user)
       is_admin: false,
-
-      // PLN Specific
-      ...(isPlnProduct &&
-        plnData && {
-          meter_no: plnData.meter_no,
-          subscriber_id: plnData.subscriber_id,
-          kwh: plnData.kwh,
-          pln_name: plnData.name,
-          pln_subscriber_id: plnData.subscriber_id,
-          pln_segment_power: plnData.segment_power,
-        }),
     };
+
+    console.log(data);
 
     setLoadingOrder(true);
     try {
       const response = await axios.post(`${url}/api/create-transaction`, data);
       toast.success("Berhasil membuat transaksi");
-      router.push(`/history/${response.data.data.transaction.order_id}`);
+      router.push(`/history/${response.data.data.order_id}`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Gagal membuat transaksi");
     } finally {
@@ -623,13 +644,13 @@ const GamesTopup = () => {
             }}
           >
             <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
-              <div className="relative">
+              <div className="relative bg-white">
                 <Image
-                  src={service.logo || "/default-game-logo.png"}
+                  src={service.logo}
                   alt={`${service.name} Logo`}
                   className="w-24 h-24 md:w-28 md:h-28 rounded-xl shadow-2xl object-cover border-4 border-white/20"
-                  width={112}
-                  height={112}
+                  width={120}
+                  height={120}
                 />
                 <div
                   className="absolute -bottom-2 -right-2 text-white text-xs font-bold px-3 py-1 rounded-full"
@@ -707,7 +728,7 @@ const GamesTopup = () => {
                 {renderProducts()}
               </div>
 
-              {/* Step 3: Metode Pembayaran */}
+              {/* Step 3: Metode Pembayaran - Menggunakan Accordion seperti kode kedua */}
               <div
                 className="rounded-2xl shadow-lg p-6"
                 style={{ backgroundColor: COLORS.primary }}
@@ -725,67 +746,100 @@ const GamesTopup = () => {
                     Metode Pembayaran
                   </h2>
                 </div>
-                <div className="grid sm:grid-cols-1 lg:grid-cols-3 gap-4">
-                  {paymentMethods.map((method) => (
-                    <div
-                      key={method.id}
-                      className={`border-2 rounded-xl p-4 flex items-center cursor-pointer transition-all ${
-                        paymentMethod?.id === method.id
-                          ? "shadow-lg scale-105"
-                          : ""
-                      }`}
-                      onClick={() => setPaymentMethod(method)}
-                      style={{
-                        backgroundColor:
-                          paymentMethod?.id === method.id
-                            ? COLORS.secondary
-                            : COLORS.primary,
-                        borderColor:
-                          paymentMethod?.id === method.id
-                            ? COLORS.success
-                            : COLORS.accent,
-                      }}
-                    >
-                      {method.logo && (
-                        <Image
-                          src={method.logo}
-                          alt={method.name}
-                          width={32}
-                          height={32}
-                          className="object-contain mr-3"
-                        />
-                      )}
-                      <div className="flex-grow">
-                        <div className="font-semibold text-gray-100">
-                          {method.name}
-                        </div>
-                      </div>
-                      {paymentMethod?.id === method.id && (
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: COLORS.success }}
+                <div className="space-y-3">
+                  {Object.entries(groupedPaymentMethods).map(
+                    ([type, methods]) => (
+                      <div
+                        key={type}
+                        className="border rounded-xl overflow-hidden"
+                        style={{ borderColor: COLORS.accent }}
+                      >
+                        {/* HEADER */}
+                        <button
+                          type="button"
+                          onClick={() => toggleAccordion(type)}
+                          className="w-full flex justify-between items-center p-4 text-left"
+                          style={{ backgroundColor: COLORS.secondary }}
                         >
-                          <svg
-                            className="w-4 h-4 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="3"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                          <span className="font-bold text-white">
+                            {formatType(type)}
+                          </span>
+                          <span className="text-white">
+                            {openAccordion === type ? "−" : "+"}
+                          </span>
+                        </button>
+
+                        {/* CONTENT */}
+                        {openAccordion === type && (
+                          <div className="p-4 grid sm:grid-cols-1 lg:grid-cols-2 gap-3">
+                            {methods.map((method) => (
+                              <div
+                                key={method.id}
+                                className={`border-2 rounded-xl p-4 flex items-center cursor-pointer transition-all ${
+                                  paymentMethod?.id === method.id
+                                    ? "shadow-lg scale-105"
+                                    : ""
+                                }`}
+                                onClick={() => setPaymentMethod(method)}
+                                style={{
+                                  backgroundColor:
+                                    paymentMethod?.id === method.id
+                                      ? COLORS.secondary
+                                      : COLORS.primary,
+                                  borderColor:
+                                    paymentMethod?.id === method.id
+                                      ? COLORS.success
+                                      : COLORS.accent,
+                                }}
+                              >
+                                {method.logo && (
+                                  <Image
+                                    src={method.logo}
+                                    alt={method.name}
+                                    width={32}
+                                    height={32}
+                                    className="object-contain mr-3"
+                                  />
+                                )}
+
+                                <div className="flex-grow">
+                                  <div className="font-semibold text-gray-100">
+                                    {method.name}
+                                  </div>
+                                  {method.percentase_fee > 0 ||
+                                  method.nominal_fee > 0 ? (
+                                    <div className="text-xs text-gray-400 mt-1">
+                                      {method.percentase_fee > 0 &&
+                                        `Fee ${method.percentase_fee}% `}
+                                      {method.nominal_fee > 0 &&
+                                        `+ Rp${method.nominal_fee.toLocaleString()}`}
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-green-400 mt-1">
+                                      Tanpa biaya
+                                    </div>
+                                  )}
+                                </div>
+
+                                {paymentMethod?.id === method.id && (
+                                  <div
+                                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: COLORS.success }}
+                                  >
+                                    ✓
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
 
-              {/* Step 4: Data Pembeli (UPDATED) */}
+              {/* Step 4: Data Pembeli */}
               <div
                 className="rounded-2xl shadow-lg p-6"
                 style={{ backgroundColor: COLORS.primary }}
@@ -805,7 +859,7 @@ const GamesTopup = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Nama Pelanggan - NEW */}
+                  {/* Nama Pelanggan */}
                   {!isPlnProduct && (
                     <div>
                       <label className="block text-sm font-medium text-gray-200 mb-2">
@@ -841,20 +895,6 @@ const GamesTopup = () => {
                     <p className="text-xs text-gray-400 mt-1">
                       Untuk notifikasi status transaksi
                     </p>
-                  </div>
-
-                  {/* Catatan - NEW */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-200 mb-2">
-                      Catatan (opsional)
-                    </label>
-                    <textarea
-                      className="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 focus:outline-none"
-                      placeholder="Tambahkan catatan jika perlu (contoh: via admin, request khusus, dll)"
-                      rows="3"
-                      value={customerNote}
-                      onChange={(e) => setCustomerNote(e.target.value)}
-                    />
                   </div>
 
                   {/* Info Tambahan untuk PLN */}
@@ -943,6 +983,21 @@ const GamesTopup = () => {
                               </p>
                               <p className="text-sm text-gray-200">
                                 {isPlnProduct ? plnData?.name : customerName}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Metode Pembayaran */}
+                          {paymentMethod && (
+                            <div
+                              className="pb-3 border-b"
+                              style={{ borderColor: COLORS.secondary }}
+                            >
+                              <p className="text-xs text-gray-400 mb-1">
+                                Metode Pembayaran
+                              </p>
+                              <p className="text-sm font-semibold text-gray-200">
+                                {paymentMethod.name}
                               </p>
                             </div>
                           )}

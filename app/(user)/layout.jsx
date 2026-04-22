@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Header from "../../components/home/header";
 import Footer from "../../components/home/Footer";
 import { cookies } from "next/headers";
+import ChatCustomer from "../../components/home/ChatCustomer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,6 +57,8 @@ export default async function HomeLayout({ children }) {
     >
       <Header user={user} />
       <div className="container mx-auto">{children}</div>
+
+      <ChatCustomer />
       <Footer />
     </div>
   );

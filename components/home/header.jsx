@@ -132,24 +132,32 @@ export default function Navbar({ user }) {
   return (
     <nav className="bg-[#1a191d] border-b border-gray-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between h-16 items-center">
+        {/* ===================== */}
+        {/* TOP NAV */}
+        {/* ===================== */}
+        <div className="flex items-center justify-between h-16 gap-4">
           {/* LOGO */}
-          <Link href="/" className="text-white font-bold">
-            Arveshop
+          <Link href="/" className="text-white font-bold text-lg">
+            ARVE
           </Link>
 
-          {/* MENU DESKTOP */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/" className={menuClass("/")}>
-              Top Up
-            </Link>
-            <Link href="/cek-transaksi" className={menuClass("/cek-transaksi")}>
-              Cek Transaksi
-            </Link>
+          {/* SEARCH BAR */}
+          <div className="flex-1 max-w-2xl hidden md:block">
+            <input
+              type="text"
+              placeholder="Cari Game dan lainnya"
+              className="w-full bg-[#2a2a2e] text-white px-5 py-2.5 rounded-full outline-none border border-gray-700 focus:border-blue-500"
+            />
           </div>
 
-          {/* AUTH DESKTOP */}
-          <div className="hidden md:flex items-center gap-4 relative">
+          {/* RIGHT SIDE */}
+          <div className="flex items-center gap-4">
+            {/* CURRENCY */}
+            <div className="hidden md:flex items-center gap-2 bg-[#2a2a2e] px-3 py-1.5 rounded-full text-sm text-white border border-gray-700">
+              🇮🇩 ID / IDR
+            </div>
+
+            {/* AUTH */}
             {user ? (
               <div className="relative">
                 <button
@@ -159,7 +167,7 @@ export default function Navbar({ user }) {
                   <div className="w-8 h-8 flex items-center justify-center bg-blue-600 rounded-full text-sm font-bold">
                     {getInitial(user.name)}
                   </div>
-                  <span className="text-sm">{user.name}</span>
+                  <span className="text-sm hidden md:block">{user.name}</span>
                   <ChevronDown size={16} />
                 </button>
 
@@ -170,49 +178,82 @@ export default function Navbar({ user }) {
                 )}
               </div>
             ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-gray-300 hover:text-white transition"
-                >
-                  Masuk
-                </Link>
-                <Link
-                  href="/register"
-                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white transition"
-                >
-                  Daftar
-                </Link>
-              </>
+              <Link
+                href="/login"
+                className="text-gray-300 hover:text-white transition"
+              >
+                Masuk
+              </Link>
             )}
-          </div>
 
-          {/* HAMBURGER MOBILE */}
-          <button
-            className="md:hidden text-white"
-            onClick={() => setOpen(!open)}
-          >
-            {open ? <X size={24} /> : <Menu size={24} />}
-          </button>
+            {/* MOBILE MENU */}
+            <button
+              className="md:hidden text-white"
+              onClick={() => setOpen(!open)}
+            >
+              {open ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
+        {/* ===================== */}
+        {/* BOTTOM MENU */}
+        {/* ===================== */}
+        <div className="hidden md:flex items-center gap-8 h-12 border-t border-gray-800 text-sm">
+          <Link href="/" className={menuClass("/")}>
+            Topup
+          </Link>
+          <Link href="/cek-transaksi" className={menuClass("/cek-transaksi")}>
+            Cek Transaksi
+          </Link>
+          {/* <Link href="/leaderboard" className="text-gray-300 hover:text-white">
+            Leaderboard
+          </Link> */}
+        </div>
+
+        {/* ===================== */}
         {/* MOBILE MENU */}
+        {/* ===================== */}
         {open && (
           <div className="md:hidden border-t border-gray-800">
             <div className="px-4 py-4 space-y-4">
+              {/* SEARCH MOBILE */}
+              <input
+                type="text"
+                placeholder="Cari Game dan lainnya"
+                className="w-full bg-[#2a2a2e] text-white px-4 py-2 rounded-lg border border-gray-700"
+              />
+
               <Link
                 href="/"
                 onClick={() => setOpen(false)}
                 className="block text-gray-300"
               >
-                Top Up
+                Topup
               </Link>
+
               <Link
                 href="/cek-transaksi"
                 onClick={() => setOpen(false)}
                 className="block text-gray-300"
               >
                 Cek Transaksi
+              </Link>
+
+              <Link
+                href="/leaderboard"
+                onClick={() => setOpen(false)}
+                className="block text-gray-300"
+              >
+                Leaderboard
+              </Link>
+
+              <Link
+                href="/kalkulator"
+                onClick={() => setOpen(false)}
+                className="block text-gray-300"
+              >
+                Kalkulator
               </Link>
 
               <div className="border-t border-gray-700 pt-4 space-y-3">
@@ -227,22 +268,13 @@ export default function Navbar({ user }) {
                     {renderMobileMenu()}
                   </>
                 ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      onClick={() => setOpen(false)}
-                      className="block text-gray-300"
-                    >
-                      Masuk
-                    </Link>
-                    <Link
-                      href="/register"
-                      onClick={() => setOpen(false)}
-                      className="block text-white bg-blue-600 px-4 py-2 rounded-lg"
-                    >
-                      Daftar
-                    </Link>
-                  </>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="block text-gray-300"
+                  >
+                    Masuk
+                  </Link>
                 )}
               </div>
             </div>

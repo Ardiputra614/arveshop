@@ -6,12 +6,28 @@ import Image from "next/image";
 
 // ✅ Komponen terpisah supaya useState boleh dipakai
 const GameCard = ({ game }) => {
+  console.log(game);
   const catName = game.category?.name ?? game.category ?? "";
   const [imgSrc, setImgSrc] = useState(game.logo || "/placeholder.png");
 
+  // ✅ Perbaikan logic untuk menentukan href
+  const getHref = () => {
+    const categoryName = (
+      game.category?.name ??
+      game.category ??
+      ""
+    ).toLowerCase();
+    const isPascabayar = categoryName === "pascabayar";
+
+    if (isPascabayar) {
+      return `/${game.slug}/pascabayar`;
+    }
+    return `/${game.slug}`;
+  };
+
   return (
-    <Link href={`/${game.slug}`} className="group">
-      <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-800 shadow-lg hover:-translate-y-1 transition-transform duration-200">
+    <Link href={getHref()} className="group">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-800 shadow-lg hover:rotate-2 hover:scale-[1.06] transition-transform duration-200">
         <Image
           src={imgSrc}
           alt={game.name}
@@ -22,8 +38,8 @@ const GameCard = ({ game }) => {
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-        <div className="absolute bottom-0 p-4">
-          <h3 className="text-white font-bold text-sm">{game.name}</h3>
+        <div className="absolute bottom-0 p-4 bg-black/60 w-full">
+          <h3 className="text-white font-bold text-sm ">{game.name}</h3>
           {catName && <span className="text-xs text-gray-300">{catName}</span>}
         </div>
         {game.is_featured && (
@@ -38,6 +54,7 @@ const GameCard = ({ game }) => {
 };
 
 const Service = ({ games, title = "" }) => {
+  console.log(games);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("popular");
 
@@ -79,8 +96,7 @@ const Service = ({ games, title = "" }) => {
           <p className="text-gray-400">Coba kata kunci lain</p>
         </div>
       ) : (
-        // ✅ Pakai GameCard, bukan inline map dengan useState
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {sortedGames.map((game) => (
             <GameCard key={game.id} game={game} />
           ))}
