@@ -606,7 +606,7 @@ const GamesTopup = () => {
     try {
       const response = await axios.post(`${url}/api/create-transaction`, data);
       toast.success("Berhasil membuat transaksi");
-      router.push(`/history/${response.data.data.order_id}`);
+      router.push(response.data.data.duitku_payment_url);
     } catch (error) {
       toast.error(error.response?.data?.message || "Gagal membuat transaksi");
     } finally {

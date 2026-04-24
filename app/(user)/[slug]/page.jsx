@@ -568,18 +568,18 @@ const GamesTopup = () => {
     // Data untuk dikirim ke backend
     const data = {
       // Basic Info
-      id: selectedProduct.id,
+      product_id: selectedProduct.id,
       buyer_sku_code: selectedProduct.buyer_sku_code,
       product_name: selectedProduct.product_name,
       selling_price: selectedProduct.selling_price,
       purchase_price: selectedProduct.price,
-      product_type: selectedProduct.product_type || "game",
+      product_type: selectedProduct.product_type,
       user_id: user?.id || user?.user_id || null,
       is_admin: false,
 
       // Payment
       gross_amount: calculateTotalPayment(),
-      fee: paymentMethod.nominal_fee,
+      fee: Number(paymentMethod.nominal_fee),
       payment_method_id: paymentMethod.id,
       payment_method_name: paymentMethod.name,
       payment_type: paymentMethod.type,
@@ -605,7 +605,7 @@ const GamesTopup = () => {
     try {
       const response = await axios.post(`${url}/api/create-transaction`, data);
       toast.success("Berhasil membuat transaksi");
-      router.push(`/history/${response.data.data.order_id}`);
+      router.push(response.data.data.duitku_payment_url);
     } catch (error) {
       toast.error(error.response?.data?.message || "Gagal membuat transaksi");
     } finally {
