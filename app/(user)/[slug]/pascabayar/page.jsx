@@ -580,7 +580,7 @@ const GamesTopup = () => {
 
       // Payment
       gross_amount: calculateTotalPayment(),
-      fee: paymentMethod.nominal_fee,
+      fee: Number(paymentMethod.nominal_fee),
       payment_method_id: paymentMethod.id,
       payment_method_name: paymentMethod.name,
       payment_type: paymentMethod.type,
@@ -606,7 +606,12 @@ const GamesTopup = () => {
     try {
       const response = await axios.post(`${url}/api/create-transaction`, data);
       toast.success("Berhasil membuat transaksi");
+<<<<<<< HEAD
       router.push(response.data.data.duitku_payment_url);
+=======
+    //   router.push(`/history/${response.data.data.order_id}`);
+    router.push(response.data.payment_url);
+>>>>>>> 797770c (baru)
     } catch (error) {
       toast.error(error.response?.data?.message || "Gagal membuat transaksi");
     } finally {

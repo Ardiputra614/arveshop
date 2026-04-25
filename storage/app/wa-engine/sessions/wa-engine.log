@@ -303,3 +303,89 @@
 [2026-03-19T00:36:22.967Z] [system] [INFO] Client connected: qtSDyF-FGuktybu4AAAF
 [2026-03-19T00:36:29.048Z] [system] [INFO] Client disconnected: qtSDyF-FGuktybu4AAAF
 [2026-04-22T14:57:56.319Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-23T01:38:48.930Z] [system] [SUCCESS] Server closed
+[2026-04-23T01:38:57.933Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-23T05:46:59.040Z] [system] [INFO] Client connected: jCepUDjzYNVaQnIiAAAB
+[2026-04-23T05:47:02.429Z] [system] [INFO] Client disconnected: jCepUDjzYNVaQnIiAAAB
+[2026-04-23T07:23:36.432Z] [system] [SUCCESS] Server closed
+[2026-04-23T07:23:46.223Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-23T12:07:05.474Z] [system] [SUCCESS] Server closed
+[2026-04-23T12:07:13.258Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-23T12:11:49.829Z] [system] [INFO] Client connected: nBodUc1DZlucMlIYAAAB
+[2026-04-23T12:11:59.915Z] [device_1776946318689_duj8cadol] [INFO] QR Code received, generating image...
+[2026-04-23T12:12:00.731Z] [device_1776946318689_duj8cadol] [SUCCESS] QR Code generated successfully
+[2026-04-23T12:12:40.068Z] [device_1776946318689_duj8cadol] [WARNING] Connection closed. Reconnect: true
+[2026-04-23T12:12:47.314Z] [device_1776946318689_duj8cadol] [SUCCESS] Connected: 6287864705663
+[2026-04-23T12:12:59.324Z] [system] [INFO] Client disconnected: nBodUc1DZlucMlIYAAAB
+[2026-04-23T14:42:34.047Z] [device_1776946318689_duj8cadol] [INFO] Logging out...
+[2026-04-23T14:42:34.153Z] [device_1776946318689_duj8cadol] [WARNING] Connection closed. Reconnect: false
+[2026-04-23T14:42:34.338Z] [system] [SUCCESS] Server closed
+[2026-04-23T14:42:43.418Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-23T16:06:12.824Z] [system] [SUCCESS] Server closed
+[2026-04-23T16:06:22.628Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-23T16:43:40.452Z] [system] [SUCCESS] Server closed
+[2026-04-23T16:43:49.340Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-24T05:04:52.596Z] [system] [INFO] Client connected: d6R9PBt7m7V2O2J4AAAB
+[2026-04-24T05:05:09.709Z] [device_1777007107681_lgmz4j546] [INFO] QR Code received, generating image...
+[2026-04-24T05:05:10.249Z] [device_1777007107681_lgmz4j546] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:05:49.743Z] [device_1777007107681_lgmz4j546] [WARNING] Connection closed. Reconnect: true
+[2026-04-24T05:05:57.219Z] [device_1777007107681_lgmz4j546] [SUCCESS] Connected: 6287864705663
+[2026-04-24T05:06:02.732Z] [system] [INFO] Client disconnected: d6R9PBt7m7V2O2J4AAAB
+[2026-04-24T05:35:50.291Z] [device_1777007107681_lgmz4j546] [INFO] Logging out...
+[2026-04-24T05:35:50.499Z] [device_1777007107681_lgmz4j546] [WARNING] Connection closed. Reconnect: false
+[2026-04-24T05:35:50.790Z] [system] [SUCCESS] Server closed
+[2026-04-24T05:36:04.230Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-24T05:36:31.043Z] [system] [INFO] Client connected: Y974gJ7pmYnafdGVAAAB
+[2026-04-24T05:36:42.213Z] [device_1777009000959_q31a0trvn] [INFO] QR Code received, generating image...
+[2026-04-24T05:36:42.663Z] [device_1777009000959_q31a0trvn] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:37:42.551Z] [device_1777009000959_q31a0trvn] [INFO] QR Code received, generating image...
+[2026-04-24T05:37:42.645Z] [device_1777009000959_q31a0trvn] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:38:02.599Z] [device_1777009000959_q31a0trvn] [INFO] QR Code received, generating image...
+[2026-04-24T05:38:02.640Z] [device_1777009000959_q31a0trvn] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:38:22.621Z] [device_1777009000959_q31a0trvn] [INFO] QR Code received, generating image...
+[2026-04-24T05:38:22.666Z] [device_1777009000959_q31a0trvn] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:38:42.649Z] [device_1777009000959_q31a0trvn] [INFO] QR Code received, generating image...
+[2026-04-24T05:38:42.731Z] [device_1777009000959_q31a0trvn] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:39:02.685Z] [device_1777009000959_q31a0trvn] [INFO] QR Code received, generating image...
+[2026-04-24T05:39:02.719Z] [device_1777009000959_q31a0trvn] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:39:22.707Z] [device_1777009000959_q31a0trvn] [WARNING] Connection closed. Reconnect: true
+[2026-04-24T05:39:28.513Z] [device_1777009000959_q31a0trvn] [INFO] QR Code received, generating image...
+[2026-04-24T05:39:28.545Z] [device_1777009000959_q31a0trvn] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:40:28.529Z] [device_1777009000959_q31a0trvn] [INFO] QR Code received, generating image...
+[2026-04-24T05:40:28.630Z] [device_1777009000959_q31a0trvn] [SUCCESS] QR Code generated successfully
+[2026-04-24T05:40:45.049Z] [device_1777009000959_q31a0trvn] [WARNING] Connection closed. Reconnect: true
+[2026-04-24T05:40:52.405Z] [device_1777009000959_q31a0trvn] [SUCCESS] Connected: 6287864705663
+[2026-04-24T05:41:00.214Z] [system] [INFO] Client disconnected: Y974gJ7pmYnafdGVAAAB
+[2026-04-24T05:44:35.027Z] [system] [INFO] Client connected: o-TiU8ODvREUOuslAAAD
+[2026-04-24T05:44:44.005Z] [system] [INFO] Client disconnected: o-TiU8ODvREUOuslAAAD
+[2026-04-24T05:51:00.617Z] [system] [INFO] Client connected: IqgoMB_03aVQeXfKAAAF
+[2026-04-24T05:51:09.197Z] [system] [INFO] Client disconnected: IqgoMB_03aVQeXfKAAAF
+[2026-04-24T06:33:00.555Z] [device_1777009000959_q31a0trvn] [INFO] Logging out...
+[2026-04-24T06:33:00.562Z] [device_1777009000959_q31a0trvn] [WARNING] Connection closed. Reconnect: false
+[2026-04-24T06:33:00.568Z] [system] [SUCCESS] Server closed
+[2026-04-24T06:33:10.947Z] [system] [SUCCESS] WA Engine started on port 4000
+[2026-04-24T11:17:08.290Z] [system] [INFO] Client connected: ptEsaiuzRGYSYFjVAAAB
+[2026-04-24T11:17:26.734Z] [device_1777029444832_dfachnvm0] [INFO] QR Code received, generating image...
+[2026-04-24T11:17:27.342Z] [device_1777029444832_dfachnvm0] [SUCCESS] QR Code generated successfully
+[2026-04-24T11:17:53.027Z] [device_1777029444832_dfachnvm0] [WARNING] Connection closed. Reconnect: true
+[2026-04-24T11:18:00.287Z] [device_1777029444832_dfachnvm0] [SUCCESS] Connected: 6287864705663
+[2026-04-24T11:31:24.703Z] [system] [INFO] Client disconnected: ptEsaiuzRGYSYFjVAAAB
+[2026-04-24T12:27:21.792Z] [system] [INFO] Client connected: 7ImSl8PMKr7h2bL5AAAD
+[2026-04-24T12:28:35.482Z] [device_1777029444832_dfachnvm0] [INFO] Sending to 6287864705664...
+[2026-04-24T12:28:39.087Z] [device_1777029444832_dfachnvm0] [SUCCESS] Message sent to 6287864705664
+[2026-04-24T12:40:42.655Z] [device_1777029444832_dfachnvm0] [INFO] Sending to 6287864705664...
+[2026-04-24T12:40:45.786Z] [device_1777029444832_dfachnvm0] [SUCCESS] Message sent to 6287864705664
+[2026-04-24T12:43:13.875Z] [system] [INFO] Client disconnected: 7ImSl8PMKr7h2bL5AAAD
+[2026-04-24T12:45:00.750Z] [device_1777029444832_dfachnvm0] [INFO] Received message from 51303703146719@lid
+[2026-04-24T12:45:06.405Z] [device_1777029444832_dfachnvm0] [INFO] Received message from 51303703146719@lid
+[2026-04-24T12:45:07.122Z] [device_1777029444832_dfachnvm0] [INFO] Received message from 51303703146719@lid
+[2026-04-24T12:48:08.066Z] [device_1777029444832_dfachnvm0] [INFO] Sending to 6287864705664...
+[2026-04-24T12:48:13.150Z] [device_1777029444832_dfachnvm0] [SUCCESS] Message sent to 6287864705664
+[2026-04-24T13:15:04.439Z] [system] [INFO] Client connected: ZMo1p0piEVwYy1iOAAAF
+[2026-04-24T14:03:14.978Z] [system] [INFO] Client disconnected: ZMo1p0piEVwYy1iOAAAF
+[2026-04-24T16:16:05.991Z] [device_1777029444832_dfachnvm0] [INFO] Sending to 6287864705664...
+[2026-04-24T16:16:10.172Z] [device_1777029444832_dfachnvm0] [SUCCESS] Message sent to 6287864705664
+[2026-04-24T17:41:48.317Z] [device_1777029444832_dfachnvm0] [WARNING] Connection closed. Reconnect: true
+[2026-04-24T17:41:54.699Z] [device_1777029444832_dfachnvm0] [SUCCESS] Connected: 6287864705663
+[2026-04-24T22:30:20.654Z] [device_1777029444832_dfachnvm0] [WARNING] Connection closed. Reconnect: true
+[2026-04-24T22:30:27.237Z] [device_1777029444832_dfachnvm0] [SUCCESS] Connected: 6287864705663
