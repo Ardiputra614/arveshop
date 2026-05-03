@@ -47,8 +47,18 @@ export default function RegisterPage() {
       });
 
       // Kalau backend auto-login → bisa langsung push("/")
-      router.push("/login");
-    } catch (err) {
+      // router.push("/login");
+      router.push(`/verify-email?email=${email}`);
+    } catch (error) {
+      const code = error.response?.data?.code;
+      const message = error.response?.data?.message;
+      console.log(error);
+
+      if (code === "EMAIL_NOT_VERIFIED") {
+        // redirect ke halaman verify + kirim email
+        router.push(`/verify-email?email=${email}`);
+        return;
+      }
       setError(err.response?.data?.message || "Register gagal");
     } finally {
       setLoading(false);
@@ -64,6 +74,10 @@ export default function RegisterPage() {
           </h1>
           <p className="text-white text-sm">
             Get started — it only takes a moment.
+          </p>
+
+          <p className="text-xs text-gray-300">
+            Setelah daftar, cek email untuk verifikasi akun.
           </p>
         </div>
 

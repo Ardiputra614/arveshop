@@ -37,7 +37,7 @@ const FormatRupiah = ({ value, className = "" }) => {
   return <span className={className}>{formatCurrency(value)}</span>;
 };
 
-// Komponen FormatRupiahInput
+// Komponen FormatRupiahInput - SIMPLE VERSION
 const FormatRupiahInput = ({
   id,
   value,
@@ -48,18 +48,13 @@ const FormatRupiahInput = ({
   error = false,
   ...props
 }) => {
-  // const [displayValue, setDisplayValue] = useState("");
+  const [displayValue, setDisplayValue] = useState("");
 
   // Format number to Rupiah
   const formatRupiah = useCallback((number) => {
     if (!number && number !== 0) return "";
-
-    // Remove non-numeric characters
     const numericValue = number.toString().replace(/\D/g, "");
-
     if (!numericValue) return "";
-
-    // Format to Rupiah
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
@@ -78,10 +73,10 @@ const FormatRupiahInput = ({
       .trim();
   }, []);
 
-  const displayValue = useMemo(() => {
-  if (value || value === 0) return formatRupiah(value);
-  return "";
-}, [value]);
+  // Update display value when value prop changes
+  useEffect(() => {
+    setDisplayValue(formatRupiah(value));
+  }, [value, formatRupiah]);
 
   const handleChange = (e) => {
     const rawValue = parseRupiah(e.target.value);
@@ -105,29 +100,17 @@ const FormatRupiahInput = ({
     e.target.select();
   };
 
-  const handleBlur = (e) => {
-    const rawValue = parseRupiah(e.target.value);
-    setDisplayValue(formatRupiah(rawValue));
-  };
-
   const handleKeyDown = (e) => {
-    // Allow navigation and control keys
     const allowedKeys = [8, 9, 13, 27, 46, 37, 38, 39, 40];
-
-    // Allow Ctrl/Command combinations
     if ((e.ctrlKey || e.metaKey) && [65, 67, 86, 88].includes(e.keyCode)) {
       return;
     }
-
-    // Allow numbers
     if (
       (e.keyCode >= 48 && e.keyCode <= 57) ||
       (e.keyCode >= 96 && e.keyCode <= 105)
     ) {
       return;
     }
-
-    // Prevent if not allowed
     if (!allowedKeys.includes(e.keyCode)) {
       e.preventDefault();
     }
@@ -144,7 +127,6 @@ const FormatRupiahInput = ({
         value={displayValue}
         onChange={handleChange}
         onFocus={handleFocus}
-        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
@@ -176,7 +158,7 @@ export default function PaymentMethodPage() {
   // Form states
   const [formData, setFormData] = useState({
     name: "",
-    percentase_fee: null,
+    percentage_fee: null,
     nominal_fee: null,
     type: "",
     fee_type: "",
@@ -265,7 +247,7 @@ export default function PaymentMethodPage() {
     setSelectedMethod(null);
     setFormData({
       name: "",
-      percentase_fee: null,
+      percentage_fee: null,
       nominal_fee: null,
       type: "",
       fee_type: "",
@@ -288,8 +270,8 @@ export default function PaymentMethodPage() {
 
     setFormData({
       name: method.name || "",
-      percentase_fee: method.percentase_fee || null,
-      nominal_fee: method.nominal_fee || null,
+      percentage_fee: method.percentage_fee || "",
+      nominal_fee: method.nominal_fee || "",
       type: method.type || "",
       fee_type: method.fee_type || "",
       is_active: method.is_active || false,
@@ -406,13 +388,20 @@ export default function PaymentMethodPage() {
     }
 
     // Validasi berdasarkan fee_type
-    if (formData.fee_type === "percentase_fee") {
-      if (!formData.percentase_fee && formData.percentase_fee !== 0) {
-        errors.percentase_fee = "Percentase fee wajib diisi";
+    if (formData.fee_type === "percentage") {
+      if (!formData.percentage_fee && formData.percentage_fee !== 0) {
+        errors.percentage_fee = "Percentage fee wajib diisi";
       }
-    } else if (formData.fee_type === "nominal_fee") {
+    } else if (formData.fee_type === "flat") {
       if (!formData.nominal_fee && formData.nominal_fee !== 0) {
         errors.nominal_fee = "Nominal fee wajib diisi";
+      }
+    } else if (formData.fee_type === "mixed") {
+      if (!formData.nominal_fee && formData.nominal_fee !== 0) {
+        errors.nominal_fee = "Nominal fee wajib diisi";
+      }
+      if (!formData.percentage_fee && formData.percentage_fee !== 0) {
+        errors.percentage_fee = "Percentage fee wajib diisi";
       }
     }
 
@@ -445,12 +434,16 @@ export default function PaymentMethodPage() {
       formDataToSend.append("type", formData.type);
       formDataToSend.append("is_active", formData.is_active);
 
-      if (formData.nominal_fee) {
-        formDataToSend.append("nominal_fee", formData.nominal_fee);
-      }
-
-      if (formData.percentase_fee) {
-        formDataToSend.append("percentase_fee", formData.percentase_fee);
+      // Handle fee berdasarkan tipe
+      if (formData.fee_type === "flat") {
+        formDataToSend.append("nominal_fee", formData.nominal_fee || 0);
+        formDataToSend.append("percentage_fee", 0);
+      } else if (formData.fee_type === "percentage") {
+        formDataToSend.append("nominal_fee", 0);
+        formDataToSend.append("percentage_fee", formData.percentage_fee || 0);
+      } else if (formData.fee_type === "mixed") {
+        formDataToSend.append("nominal_fee", formData.nominal_fee || 0);
+        formDataToSend.append("percentage_fee", formData.percentage_fee || 0);
       }
 
       // Handle logo
@@ -625,6 +618,7 @@ export default function PaymentMethodPage() {
                     <option value="ewallet">E-Wallet</option>
                     <option value="qris">QRIS</option>
                     <option value="cc">Credit Card</option>
+                    <option value="cstore">Convensional Store</option>
                   </select>
                 </div>
 
@@ -756,18 +750,29 @@ export default function PaymentMethodPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {method.fee_type === "percentase_fee" ? (
+                            {method.fee_type === "percentage" ? (
                               <div className="text-sm text-gray-900">
                                 <span className="font-semibold">
-                                  {method.percentase_fee}%
+                                  {method.percentage_fee}%
                                 </span>
                               </div>
-                            ) : (
+                            ) : method.fee_type === "flat" ? (
                               <div className="text-sm text-gray-900">
                                 <FormatRupiah
                                   value={parseInt(method.nominal_fee || 0)}
                                 />
                               </div>
+                            ) : method.fee_type === "mixed" ? (
+                              <div className="text-sm text-gray-900">
+                                <span className="font-semibold">
+                                  {method.percentage_fee}% +{" "}
+                                  <FormatRupiah
+                                    value={parseInt(method.nominal_fee || 0)}
+                                  />
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-900">-</div>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1015,41 +1020,15 @@ export default function PaymentMethodPage() {
                             }`}
                           >
                             <option value="">Pilih Tipe</option>
-                            <option value="percentase_fee">
-                              Percentase Fee
-                            </option>
-                            <option value="nominal_fee">Nominal Fee</option>
+                            <option value="percentage">Percentage Fee</option>
+                            <option value="flat">Nominal Fee</option>
+                            <option value="mixed">Mixed</option>
                           </select>
                         </div>
 
                         {/* Fees */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {formData.fee_type === "percentase_fee" ? (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Percentage Fee (%) *
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  id="percentase_fee"
-                                  value={formData.percentase_fee || ""}
-                                  onChange={handleInputChange}
-                                  step="0.01"
-                                  min="0"
-                                  placeholder="0.00"
-                                  className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                    formErrors.percentase_fee
-                                      ? "border-red-500"
-                                      : "border-gray-300"
-                                  }`}
-                                />
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <PercentIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                              </div>
-                            </div>
-                          ) : formData.fee_type === "nominal_fee" ? (
+                          {formData.fee_type === "flat" && (
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Nominal Fee *
@@ -1061,7 +1040,66 @@ export default function PaymentMethodPage() {
                                 error={!!formErrors.nominal_fee}
                               />
                             </div>
-                          ) : null}
+                          )}
+
+                          {formData.fee_type === "percentage" && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Percentage Fee (%) *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  id="percentage_fee"
+                                  value={formData.percentage_fee || ""}
+                                  onChange={handleInputChange}
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="w-full pl-10 pr-3 py-2.5 border rounded-lg"
+                                />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <PercentIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {formData.fee_type === "mixed" && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Nominal Fee *
+                                </label>
+                                <FormatRupiahInput
+                                  id="nominal_fee"
+                                  value={formData.nominal_fee || ""}
+                                  onChange={handleInputChange}
+                                  error={!!formErrors.nominal_fee}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Percentage Fee (%) *
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    id="percentage_fee"
+                                    value={formData.percentage_fee || ""}
+                                    onChange={handleInputChange}
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                    className="w-full pl-10 pr-3 py-2.5 border rounded-lg"
+                                  />
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <PercentIcon className="h-5 w-5 text-gray-400" />
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         {/* Type and Status */}
@@ -1087,6 +1125,7 @@ export default function PaymentMethodPage() {
                               <option value="ewallet">E-Wallet</option>
                               <option value="qris">QRIS</option>
                               <option value="cc">Credit Card</option>
+                              <option value="cstore">Convensional store</option>
                             </select>
                           </div>
 
@@ -1105,67 +1144,6 @@ export default function PaymentMethodPage() {
                             </select>
                           </div>
                         </div>
-
-                        {/* Fee Calculation Example */}
-                        {(formData.percentase_fee || formData.nominal_fee) && (
-                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <h4 className="text-sm font-medium text-blue-800 mb-2">
-                              Contoh Perhitungan Biaya
-                            </h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
-                                  Nominal Transaksi:
-                                </span>
-                                <span className="font-medium">Rp 100.000</span>
-                              </div>
-                              {formData.percentase_fee && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">
-                                    Biaya {formData.percentase_fee}%:
-                                  </span>
-                                  <span className="font-medium">
-                                    Rp{" "}
-                                    {(
-                                      (100000 *
-                                        parseFloat(formData.percentase_fee)) /
-                                      100
-                                    ).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                              )}
-                              {formData.nominal_fee && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">
-                                    Biaya Tetap:
-                                  </span>
-                                  <span className="font-medium">
-                                    Rp{" "}
-                                    {parseInt(
-                                      formData.nominal_fee || 0,
-                                    ).toLocaleString("id-ID")}
-                                  </span>
-                                </div>
-                              )}
-                              <div className="pt-2 border-t border-blue-200 flex justify-between font-semibold text-blue-800">
-                                <span>Total Biaya Admin:</span>
-                                <span>
-                                  Rp{" "}
-                                  {(
-                                    (formData.percentase_fee
-                                      ? (100000 *
-                                          parseFloat(formData.percentase_fee)) /
-                                        100
-                                      : 0) +
-                                    (formData.nominal_fee
-                                      ? parseInt(formData.nominal_fee)
-                                      : 0)
-                                  ).toLocaleString("id-ID")}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
 

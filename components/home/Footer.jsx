@@ -12,10 +12,27 @@ import {
   Zap,
   Users,
 } from "lucide-react";
+import api from "@/lib/api";
+import { useEffect, useState } from "react";
 // import Image from "next/image";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+
+  const [paymenMethod, setPaymentMethod] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await api.get("/api/payment-method");
+        setPaymentMethod(res.data.data);
+      } catch (error) {
+        toast.error("Gagal mengambil data");
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <footer className="bg-[#44444E] border-t border-gray-700/50 mt-16">
@@ -105,13 +122,23 @@ const Footer = () => {
 
             <div className="pt-6 border-t border-gray-700/50">
               <p className="text-gray-400 text-sm mb-3">Metode Pembayaran</p>
-              <div className="flex gap-2">
-                {["💳", "🏦", "📱", "💰"].map((m, i) => (
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                {paymenMethod.map((m, i) => (
                   <div
                     key={i}
-                    className="w-10 h-8 bg-gray-800 rounded-lg flex items-center justify-center"
+                    className="bg-white rounded-lg p-2 flex items-center justify-center 
+                 hover:bg-gray-700 transition cursor-pointer"
+                    title={m.name}
                   >
-                    {m}
+                    {m.logo ? (
+                      <img
+                        src={m.logo}
+                        alt={m.name}
+                        className="h-6 object-contain"
+                      />
+                    ) : (
+                      <span className="text-[10px] text-gray-400">N/A</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -122,7 +149,7 @@ const Footer = () => {
         <div className="pt-6 border-t border-gray-700/50 text-center">
           <p className="text-gray-400 text-sm">
             © {currentYear}{" "}
-            <span className="text-purple-400 font-semibold">ARVENAZ</span>. All
+            <span className="text-purple-400 font-semibold">ARFENAZ</span>. All
             rights reserved.
           </p>
         </div>

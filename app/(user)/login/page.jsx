@@ -29,7 +29,17 @@ export default function LoginPage() {
       router.push(redirectTo || "/");
       router.refresh();
     } catch (error) {
-      setError(error.response?.data?.message || "Login gagal");
+      const code = error.response?.data?.code;
+      const message = error.response?.data?.message;
+      console.log(error);
+
+      if (code === "EMAIL_NOT_VERIFIED") {
+        // redirect ke halaman verify + kirim email
+        router.push(`/verify-email?email=${email}`);
+        return;
+      }
+
+      setError(message || "Login gagal");
     } finally {
       setLoading(false);
     }

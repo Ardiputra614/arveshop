@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Trophy, ShoppingBag } from "lucide-react";
 import Service from "../../components/home/service";
+import Link from "next/link";
 
 const CACHE_TTL = 5 * 60 * 1000;
 const URL = process.env.NEXT_PUBLIC_GOLANG_URL;
@@ -265,7 +265,7 @@ export default function HomePage() {
 
   const PopularSection = ({ data }) => {
     return (
-      <div className="mb-10">
+      <div className="mb-10 px-4 container">
         {/* TITLE */}
         <div className="mb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -289,7 +289,10 @@ export default function HomePage() {
               />
 
               {/* CONTENT */}
-              <div className="relative flex items-center gap-3 z-10">
+              <Link
+                href={`/${item.slug}`}
+                className="relative flex items-center gap-3 z-10"
+              >
                 <img
                   src={`${item.logo}?f_auto,q_auto,w_100`}
                   alt={item.name}
@@ -304,7 +307,7 @@ export default function HomePage() {
                     {item.category?.name || "Game"}
                   </p>
                 </div>
-              </div>
+              </Link>
             </div>
           ))}
         </div>
